@@ -18,7 +18,10 @@ import {
   isProcessingJobActive,
   markProcessingJobRunningIfActive,
 } from "@/lib/jobs/cancellation";
-import { isAsyncAiGenerationEnabled } from "@/lib/jobs/flags";
+import {
+  isAsyncAiGenerationEnabled,
+  isDedicatedJobWorkerEnabled,
+} from "@/lib/jobs/flags";
 import { createClient } from "@/lib/supabase/server";
 
 export type GenerateCourseState = {
@@ -403,6 +406,16 @@ export async function generateCourseAction(
     };
   }
 
+  if (isDedicatedJobWorkerEnabled()) {
+    return {
+      ok: true,
+      queued: true,
+      jobId: queued.work.jobId,
+      message:
+        "Course generation queued for the dedicated worker. Watch the jobs list; open the new course from the project when ready.",
+    };
+  }
+
   if (isAsyncAiGenerationEnabled()) {
     after(() => {
       void executeCourseGenerate(queued.work);
@@ -459,6 +472,14 @@ export async function retryCourseGenerateAction(
 
   if (!queued.ok) {
     return { ok: false, error: queued.message };
+  }
+
+  if (isDedicatedJobWorkerEnabled()) {
+    return {
+      ok: true,
+      jobId: queued.work.jobId,
+      message: "Course generation re-queued for the dedicated worker.",
+    };
   }
 
   if (isAsyncAiGenerationEnabled()) {

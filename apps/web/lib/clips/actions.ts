@@ -12,7 +12,10 @@ import {
   isProcessingJobActive,
   markProcessingJobRunningIfActive,
 } from "@/lib/jobs/cancellation";
-import { isAsyncMockVideoJobsEnabled } from "@/lib/jobs/flags";
+import {
+  isAsyncMockVideoJobsEnabled,
+  isDedicatedJobWorkerEnabled,
+} from "@/lib/jobs/flags";
 import { createClient } from "@/lib/supabase/server";
 import { getTranscriptForSourceFile } from "@/lib/transcripts/queries";
 import { VIDEO_FILE_TYPES } from "@/lib/uploads/constants";
@@ -235,6 +238,16 @@ export async function detectClipCandidatesAction(
 ): Promise<ClipActionResult> {
   const queued = await enqueueClipDetect(sourceFileId, options);
   if (!queued.ok) return queued;
+
+  if (isDedicatedJobWorkerEnabled()) {
+    return {
+      ok: true,
+      queued: true,
+      jobId: queued.work.jobId,
+      message:
+        "Clip detection queued for the dedicated worker. Watch progress on the jobs list; open clip review when ready.",
+    };
+  }
 
   if (isAsyncMockVideoJobsEnabled()) {
     after(() => {

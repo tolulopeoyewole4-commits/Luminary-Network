@@ -11,7 +11,10 @@ import {
   isProcessingJobActive,
   markProcessingJobRunningIfActive,
 } from "@/lib/jobs/cancellation";
-import { isAsyncMockVideoJobsEnabled } from "@/lib/jobs/flags";
+import {
+  isAsyncMockVideoJobsEnabled,
+  isDedicatedJobWorkerEnabled,
+} from "@/lib/jobs/flags";
 import { createClient } from "@/lib/supabase/server";
 import { buildMockTranscriptSegments } from "@/lib/transcripts/mock";
 import { VIDEO_FILE_TYPES } from "@/lib/uploads/constants";
@@ -258,6 +261,16 @@ export async function generateMockTranscriptAction(
 ): Promise<TranscriptActionResult> {
   const queued = await enqueueMockTranscript(sourceFileId, options);
   if (!queued.ok) return queued;
+
+  if (isDedicatedJobWorkerEnabled()) {
+    return {
+      ok: true,
+      queued: true,
+      jobId: queued.work.jobId,
+      message:
+        "Transcript generation queued for the dedicated worker. Watch progress on the jobs list; open the transcript when ready.",
+    };
+  }
 
   if (isAsyncMockVideoJobsEnabled()) {
     after(() => {

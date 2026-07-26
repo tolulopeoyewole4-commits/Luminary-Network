@@ -2,6 +2,15 @@
 
 All notable changes to Luminary AI are documented here.
 
+## [0.25.0] — Milestone 25
+
+### Added
+
+- Dedicated worker handlers for `video_transcribe`, `clip_detect`, `caption_generate`, `course_generate`, and `social_generate` (Python mock ports).
+- When `DEDICATED_JOB_WORKER=true`, those jobs skip Next.js `after()` and stay queued for `pnpm worker`.
+- Expanded default `WORKER_JOB_TYPES` to cover all eight worker-handled job types.
+- Unit coverage for mock transcript/clips/captions and mock course/social generators.
+
 ## [0.24.0] — Milestone 24
 
 ### Added

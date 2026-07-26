@@ -6,7 +6,8 @@ import logging
 import time
 
 from app.core.config import settings
-from app.workers.handlers import WorkerJobError, process_job
+from app.workers.handlers import process_job
+from app.workers.jobs import WorkerJobError
 from app.workers.jobs import claim_next_job
 from app.workers.supabase_client import get_service_supabase
 

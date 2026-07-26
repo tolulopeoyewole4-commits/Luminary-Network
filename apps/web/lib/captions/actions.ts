@@ -16,7 +16,10 @@ import {
   isProcessingJobActive,
   markProcessingJobRunningIfActive,
 } from "@/lib/jobs/cancellation";
-import { isAsyncMockVideoJobsEnabled } from "@/lib/jobs/flags";
+import {
+  isAsyncMockVideoJobsEnabled,
+  isDedicatedJobWorkerEnabled,
+} from "@/lib/jobs/flags";
 import { createClient } from "@/lib/supabase/server";
 import { buildMockTranscriptSegments } from "@/lib/transcripts/mock";
 import { getTranscriptForSourceFile } from "@/lib/transcripts/queries";
@@ -275,6 +278,16 @@ export async function generateCaptionsAction(
 ): Promise<CaptionActionResult> {
   const queued = await enqueueCaptionGenerate(sourceFileId, options);
   if (!queued.ok) return queued;
+
+  if (isDedicatedJobWorkerEnabled()) {
+    return {
+      ok: true,
+      queued: true,
+      jobId: queued.work.jobId,
+      message:
+        "Caption generation queued for the dedicated worker. Watch progress on the jobs list; open captions when ready.",
+    };
+  }
 
   if (isAsyncMockVideoJobsEnabled()) {
     after(() => {

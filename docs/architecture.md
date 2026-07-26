@@ -156,7 +156,7 @@ Browser
 2. Set `DEDICATED_JOB_WORKER=true` on the web app so enqueue paths for `document_extract`, `video_metadata`, and `video_export` skip Next.js `after()` and leave rows `queued`.
 3. Run `pnpm worker` (or `docker compose --profile worker up worker`) with `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`.
 4. The worker polls, claims one job, downloads from private storage, runs extract/metadata/export in-process, and writes results with cooperative cancel checks.
-5. Mock/AI jobs (`video_transcribe`, `clip_detect`, `caption_generate`, `course_generate`, `social_generate`) still use `after()` in this milestone.
+5. With `DEDICATED_JOB_WORKER=true`, mock/AI jobs (`video_transcribe`, `clip_detect`, `caption_generate`, `course_generate`, `social_generate`) are also claimed by the worker (Python mock ports). Otherwise they still use `after()`.
 6. Default `DEDICATED_JOB_WORKER=false` keeps the existing `after()` path for local/dev without a worker process.
 
 ## Storage

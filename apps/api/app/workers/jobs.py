@@ -7,6 +7,27 @@ from supabase import Client
 from app.core.config import settings
 
 
+class WorkerJobError(Exception):
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+        self.message = message
+
+
+def require_source_file(client: Client, source_file_id: str | None) -> dict[str, Any]:
+    if not source_file_id:
+        raise WorkerJobError("Job has no linked source file.")
+    response = (
+        client.table("source_files")
+        .select("*")
+        .eq("id", source_file_id)
+        .maybe_single()
+        .execute()
+    )
+    if not response.data:
+        raise WorkerJobError("Source file not found.")
+    return response.data
+
+
 def claim_next_job(client: Client) -> dict[str, Any] | None:
     response = client.rpc(
         "claim_processing_job",

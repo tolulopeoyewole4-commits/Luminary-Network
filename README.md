@@ -118,9 +118,9 @@ pnpm health:api
 
 ## Current milestone
 
-**Milestone 24 — Dedicated worker queue**
+**Milestone 25 — Worker mock/AI jobs**
 
-Optional FastAPI worker claims queued `document_extract` / `video_metadata` / `video_export` jobs when `DEDICATED_JOB_WORKER=true`. Default remains Next.js `after()` for local/dev without a worker process.
+Optional FastAPI worker (`DEDICATED_JOB_WORKER=true` + `pnpm worker`) claims heavy media and mock/AI jobs. Default remains Next.js `after()` for local/dev without a worker process.
 
 - Release steps: [`docs/release-checklist.md`](docs/release-checklist.md)
 - Host setup: [`docs/deployment.md`](docs/deployment.md)
