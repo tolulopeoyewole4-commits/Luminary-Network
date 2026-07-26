@@ -13,9 +13,8 @@ Luminary AI helps authors, speakers, pastors, educators, consultants, coaches, t
 | Layer | Technology |
 |-------|------------|
 | Frontend | Next.js (App Router), React, TypeScript, Tailwind CSS |
-| Backend | FastAPI (Python), background workers for media jobs |
+| Backend | FastAPI (Python), FFmpeg media jobs |
 | Auth / DB / Storage | Supabase (Auth, PostgreSQL + RLS, private Storage) |
-| Media | FFmpeg (later milestones) |
 | AI | Provider abstraction with `AI_PROVIDER=mock` for MVP |
 
 Monorepo layout:
@@ -24,8 +23,9 @@ Monorepo layout:
 apps/web          Next.js application
 apps/api          FastAPI service
 database/         SQL migrations and RLS policies
-docs/             Architecture and security docs
-packages/         Shared packages (future)
+docs/             Architecture, security, deployment
+infrastructure/   Fly/Render deploy configs
+scripts/          Health and env helpers
 ```
 
 ---
@@ -34,9 +34,9 @@ packages/         Shared packages (future)
 
 - Node.js 20+
 - pnpm 10+
-- Python 3.11+
+- Python 3.12+
 - A Supabase project
-- FFmpeg (for later video milestones)
+- FFmpeg / ffprobe (API host)
 
 ---
 
@@ -51,36 +51,26 @@ cd apps/api && python3 -m venv .venv && .venv/bin/pip install -r requirements.tx
 
 ### 2. Environment variables
 
-Copy `.env.example` to `apps/web/.env.local` and fill in Supabase values:
-
 ```bash
 cp .env.example apps/web/.env.local
+cp .env.example apps/api/.env
 ```
 
-Required for Milestone 1:
+Required for local web:
 
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `NEXT_PUBLIC_APP_URL`
+- `API_URL` / `NEXT_PUBLIC_API_URL`
+- `INTERNAL_API_TOKEN` (must match API)
 
 ### 3. Database
 
-In the Supabase SQL editor, run in order:
+Apply SQL in order — see [`database/APPLY_ORDER.md`](database/APPLY_ORDER.md) or run:
 
-1. `database/migrations/0001_profiles.sql`
-2. `database/policies/0001_profiles_rls.sql`
-3. `database/migrations/0002_projects.sql`
-4. `database/policies/0002_projects_rls.sql`
-5. `database/migrations/0003_source_files.sql`
-6. `database/policies/0003_source_files_rls.sql`
-7. `database/policies/0003_source_files_storage.sql`
-8. `database/migrations/0004_document_sections.sql`
-9. `database/policies/0004_document_sections_rls.sql`
-10. `database/migrations/0005_courses.sql`
-11. `database/policies/0005_courses_rls.sql`
-12. `database/migrations/0006_generated_content.sql`
-13. `database/policies/0006_generated_content_rls.sql`
-14. `database/migrations/0007_video_processing.sql`
+```bash
+pnpm sql:order
+```
 
 Enable email auth in Supabase Authentication settings. For local development you may disable email confirmation temporarily.
 
@@ -90,8 +80,12 @@ Enable email auth in Supabase Authentication settings. For local development you
 # Frontend (http://localhost:3000)
 pnpm dev:web
 
-# API health service (http://localhost:8000)
+# API (http://localhost:8000)
 pnpm dev:api
+
+# Optional: API via Docker
+docker compose up --build api
+pnpm health:api
 ```
 
 ---
@@ -108,23 +102,28 @@ pnpm dev:api
 | `pnpm dev:api` | Start FastAPI |
 | `pnpm test:api` | Backend tests |
 | `pnpm test` | All tests |
+| `pnpm ci` | Full local CI gate |
+| `pnpm sql:order` | Print SQL apply order |
+| `pnpm health:api` | Smoke-check API `/health` |
 
 ---
 
 ## Current milestone
 
-**Milestone 11 — Captions**
+**Milestone 12 — Deployment**
 
-Video sources can generate timed caption cues (from transcript when available), edit them, preview with a WebVTT track, and download WebVTT/SRT. Cues are RLS-scoped per owner.
+Production guidance for Vercel (web), Fly/Render/Railway (API with FFmpeg), Supabase SQL apply order, GitHub Actions CI, CORS via `ALLOWED_ORIGINS`, and deploy smoke scripts.
+
+See [`docs/deployment.md`](docs/deployment.md).
 
 ```bash
-# apps/web/.env.local and apps/api/.env
-INTERNAL_API_TOKEN=dev-internal-token
-API_URL=http://localhost:8000
+# Production secrets (examples)
+INTERNAL_API_TOKEN=<long-random-secret>
+ALLOWED_ORIGINS=https://your-app.vercel.app
+NEXT_PUBLIC_APP_URL=https://your-app.vercel.app
+API_URL=https://your-api.fly.dev
 AI_PROVIDER=mock
 ```
-
-Apply SQL through `0011_captions.sql` and `0011_captions_rls.sql` after earlier migrations.
 
 ---
 
@@ -133,16 +132,19 @@ Apply SQL through `0011_captions.sql` and `0011_captions_rls.sql` after earlier 
 - Never commit `.env` files or service-role keys.
 - Browser code may only use the Supabase anon key.
 - All user-owned tables must use Row-Level Security.
-- Private creator uploads must use signed URLs (Milestone 3+).
+- Private creator uploads must use signed URLs.
+- Internal processing endpoints require `X-Internal-Token`.
 
 See [docs/security.md](docs/security.md) and [AGENTS.md](AGENTS.md).
 
 ---
 
-## Deployment (preview)
+## Deployment
 
-- Frontend: Vercel
-- API: low-cost Python host
-- Database / Auth / Storage: Supabase
+| Surface | Host |
+|---------|------|
+| Frontend | Vercel (`apps/web`) |
+| API | Fly.io / Render / Railway (`apps/api` Docker + FFmpeg) |
+| Auth / DB / Storage | Supabase |
 
-Full deployment guidance lands in Milestone 12.
+Full steps: [docs/deployment.md](docs/deployment.md).

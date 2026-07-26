@@ -28,7 +28,7 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 
 ## Current milestone
 
-**Milestone 11 — Captions** (complete)
+**Milestone 12 — Deployment** (complete)
 
 ## Completed milestones
 
@@ -44,6 +44,7 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 - **Milestone 9 — Clip Candidate Review**: `clip_candidates` + RLS, mock `clip_detect` jobs, approve/reject/edit windows with signed preview.
 - **Milestone 10 — FFmpeg Clip Export**: `exported_clips` + RLS, FastAPI `/api/v1/videos/export-clip`, private storage paths, signed downloads, retry failed `video_export` jobs.
 - **Milestone 11 — Captions**: `captions` / `caption_cues` + RLS, `caption_generate` jobs, cue editor with WebVTT preview, WebVTT/SRT download.
+- **Milestone 12 — Deployment**: Vercel/Fly/Render guidance, SQL apply order, GitHub Actions CI, production CORS/`ALLOWED_ORIGINS`, hardened API Docker image, deploy smoke scripts.
 
 ## Known issues
 
@@ -55,4 +56,5 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 
 ## Next tasks
 
-- Milestone 12: deployment.
+- Production cutover: apply SQL on Supabase, deploy API + web, run the post-deploy checklist in `docs/deployment.md`.
+- Optional: background worker queue for large video jobs; paid AI providers behind explicit flags.

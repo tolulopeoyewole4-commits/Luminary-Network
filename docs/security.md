@@ -32,13 +32,15 @@
 - Generate safe internal paths server-side; never trust client-supplied paths.
 - No public object URLs for creator content.
 
-## API security (expanding in later milestones)
+## API security
 
 - Validate Supabase access tokens for user-facing data access in Next.js.
 - Re-check ownership before processing files.
-- Document extraction endpoint requires `X-Internal-Token` (server-only); not callable anonymously from the browser.
+- Document/video processing endpoints require `X-Internal-Token` (server-only); not callable anonymously from the browser.
+- Configure production CORS with `ALLOWED_ORIGINS` (never `*` with credentials).
 - Rate-limit sensitive endpoints (basic file/project quotas exist; broader rate limits later).
 - Never log secrets or full document content.
+- Deploy checklist and secret placement: `docs/deployment.md`.
 
 ## AI avatar (future)
 

@@ -129,8 +129,11 @@ Browser
 - Feature flag: `AI_PROVIDER=mock`.
 - Course outlines are validated with Zod and always include source section references.
 
-## Deployment
+## Deployment (Milestone 12)
 
-- Web → Vercel
-- API → Python host
-- Auth/DB/Storage → Supabase
+- Web → Vercel (`apps/web`, see `docs/deployment.md` and root `vercel.json`)
+- API → Docker on Fly.io / Render / Railway (`apps/api/Dockerfile`, FFmpeg required)
+- Auth/DB/Storage → Supabase (apply `database/APPLY_ORDER.md`)
+- CI → GitHub Actions (`.github/workflows/ci.yml`)
+- API CORS origins come from `ALLOWED_ORIGINS` (plus localhost defaults)
+- Internal processing remains server-to-server via `INTERNAL_API_TOKEN`

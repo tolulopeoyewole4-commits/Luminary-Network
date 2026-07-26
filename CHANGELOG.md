@@ -2,6 +2,19 @@
 
 All notable changes to Luminary AI are documented here.
 
+## [0.12.0] — Milestone 12
+
+### Added
+
+- Deployment guide (`docs/deployment.md`) for Vercel, Fly/Render/Railway, and Supabase.
+- `database/APPLY_ORDER.md` covering migrations through captions.
+- GitHub Actions CI for web (typecheck/lint/test/build) and API (pytest + FFmpeg).
+- Infrastructure samples: `infrastructure/fly.toml`, `infrastructure/render.yaml`, root `vercel.json`.
+- API `ALLOWED_ORIGINS` CORS configuration and `/health` FFmpeg/ffprobe reporting.
+- Hardened API Dockerfile (non-root user, curl healthcheck).
+- Helper scripts: SQL order, API health smoke, env verification.
+- Baseline security headers on the Next.js app.
+
 ## [0.11.0] — Milestone 11
 
 ### Added

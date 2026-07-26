@@ -11,7 +11,12 @@
     "typecheck:web": "pnpm --filter web typecheck",
     "dev:api": "cd apps/api && .venv/bin/uvicorn app.main:app --reload --host 0.0.0.0 --port 8000",
     "test:api": "cd apps/api && .venv/bin/pytest -q",
-    "test": "pnpm test:web && pnpm test:api"
+    "test": "pnpm test:web && pnpm test:api",
+    "ci": "pnpm typecheck:web && pnpm lint:web && pnpm test:web && pnpm test:api && pnpm build:web",
+    "sql:order": "bash scripts/print-sql-apply-order.sh",
+    "health:api": "bash scripts/check-api-health.sh",
+    "verify:env:web": "bash scripts/verify-env.sh web",
+    "verify:env:api": "bash scripts/verify-env.sh api"
   },
   "engines": {
     "node": ">=20"
