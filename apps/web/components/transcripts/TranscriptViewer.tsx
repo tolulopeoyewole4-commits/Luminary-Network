@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 
 import { Alert } from "@/components/ui/Alert";
 import { updateTranscriptSegmentAction } from "@/lib/transcripts/actions";
@@ -24,7 +24,7 @@ export function TranscriptViewer({
 }: TranscriptViewerProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [query, setQuery] = useState("");
-  const [activeId, setActiveId] = useState<string | null>(
+  const [selectedId, setSelectedId] = useState<string | null>(
     transcript.segments[0]?.id ?? null,
   );
   const [currentTime, setCurrentTime] = useState(0);
@@ -59,19 +59,20 @@ export function TranscriptViewer({
     });
   }, [drafts, query, transcript.segments]);
 
-  useEffect(() => {
+  const timedActiveId = useMemo(() => {
     const active = transcript.segments.find(
       (segment) =>
         currentTime >= Number(segment.start_time) &&
         currentTime < Number(segment.end_time),
     );
-    if (active) {
-      setActiveId(active.id);
-    }
+    return active?.id ?? null;
   }, [currentTime, transcript.segments]);
 
+  const activeId = timedActiveId ?? selectedId;
+
   function jumpTo(time: number, segmentId: string) {
-    setActiveId(segmentId);
+    setSelectedId(segmentId);
+    setCurrentTime(time);
     const video = videoRef.current;
     if (!video) return;
     video.currentTime = time;
