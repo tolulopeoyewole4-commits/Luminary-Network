@@ -28,21 +28,23 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 
 ## Current milestone
 
-**Milestone 2 — Project Management** (complete; requires Supabase migrations applied)
+**Milestone 3 — Private File Upload** (complete; requires Supabase migrations + storage policies)
 
 ## Completed milestones
 
 - **Milestone 0 — Repository Audit**: greenfield repo; no prior application code.
 - **Milestone 1 — Authentication and Protected Dashboard**: monorepo scaffold, Supabase auth pages, protected dashboard/settings, profiles migration + RLS, FastAPI health endpoint, tests.
 - **Milestone 2 — Project Management**: projects table + RLS, create/list/overview/edit/archive/delete UI, dashboard project summary, validation tests.
+- **Milestone 3 — Private File Upload**: `source_files` + private `source-files` bucket, typed uploads with progress, signed downloads, delete, validation tests.
 
 ## Known issues
 
-- End-to-end auth against a live Supabase project requires project credentials in `apps/web/.env.local`.
+- End-to-end auth/upload against a live Supabase project requires project credentials in `apps/web/.env.local` and applied SQL migrations/policies.
 - Email verification behaviour depends on Supabase Auth settings.
-- FastAPI is a health/stub service only; project CRUD is handled via Next.js server actions + Supabase RLS.
+- FastAPI is still a health/stub service; uploads use Next.js server actions + Supabase Storage RLS.
+- Document extraction / processing starts in Milestone 4 (`processing_status` is prepared).
 
 ## Next tasks
 
-- Milestone 3: private file upload with signed URLs.
 - Milestone 4: PDF and document processing.
+- Milestone 5: course outline generator (mocked AI).

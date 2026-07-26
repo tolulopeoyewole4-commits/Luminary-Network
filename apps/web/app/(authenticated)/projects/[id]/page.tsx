@@ -6,8 +6,11 @@ import { ProjectDangerZone } from "@/components/projects/ProjectDangerZone";
 import { ProjectStatusBadge } from "@/components/projects/ProjectStatusBadge";
 import { ProjectTypeBadge } from "@/components/projects/ProjectTypeBadge";
 import { Alert } from "@/components/ui/Alert";
+import { SourceFileList } from "@/components/uploads/SourceFileList";
+import { SourceUploadForm } from "@/components/uploads/SourceUploadForm";
 import { getOwnProject } from "@/lib/projects/queries";
 import { createClient } from "@/lib/supabase/server";
+import { listProjectSourceFiles } from "@/lib/uploads/queries";
 
 type ProjectPageProps = {
   params: Promise<{ id: string }>;
@@ -37,6 +40,11 @@ export default async function ProjectOverviewPage({ params }: ProjectPageProps) 
     notFound();
   }
 
+  const { files, error: filesError } = await listProjectSourceFiles(
+    supabase,
+    project.id,
+  );
+
   const created = new Intl.DateTimeFormat("en", {
     dateStyle: "medium",
     timeStyle: "short",
@@ -46,6 +54,8 @@ export default async function ProjectOverviewPage({ params }: ProjectPageProps) 
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(project.updated_at));
+
+  const uploadDisabled = project.status === "archived";
 
   return (
     <div className="space-y-8">
@@ -70,11 +80,17 @@ export default async function ProjectOverviewPage({ params }: ProjectPageProps) 
         </Link>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-3">
+      <section className="grid gap-4 md:grid-cols-4">
         <div className="surface-card p-5">
           <p className="text-sm text-muted">Status</p>
           <p className="mt-2 font-display text-2xl font-semibold capitalize">
             {project.status}
+          </p>
+        </div>
+        <div className="surface-card p-5">
+          <p className="text-sm text-muted">Source files</p>
+          <p className="mt-2 font-display text-2xl font-semibold">
+            {files.length}
           </p>
         </div>
         <div className="surface-card p-5">
@@ -87,15 +103,20 @@ export default async function ProjectOverviewPage({ params }: ProjectPageProps) 
         </div>
       </section>
 
-      <section className="surface-card px-6 py-6">
-        <h2 className="font-display text-xl font-semibold">Next steps</h2>
-        <p className="mt-2 text-sm text-muted">
-          Source uploads arrive in Milestone 3. This project is ready to receive
-          private PDFs, documents, and video once upload is enabled.
-        </p>
-        <button type="button" className="btn-secondary mt-4" disabled>
-          Upload source (coming soon)
-        </button>
+      <SourceUploadForm projectId={project.id} disabled={uploadDisabled} />
+
+      {uploadDisabled ? (
+        <Alert tone="info">
+          This project is archived. Restore it before uploading new source files.
+        </Alert>
+      ) : null}
+
+      <section className="space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="font-display text-2xl font-semibold">Source library</h2>
+        </div>
+        {filesError ? <Alert tone="error">{filesError}</Alert> : null}
+        <SourceFileList files={files} />
       </section>
 
       <ProjectDangerZone projectId={project.id} status={project.status} />

@@ -71,6 +71,9 @@ In the Supabase SQL editor, run in order:
 2. `database/policies/0001_profiles_rls.sql`
 3. `database/migrations/0002_projects.sql`
 4. `database/policies/0002_projects_rls.sql`
+5. `database/migrations/0003_source_files.sql`
+6. `database/policies/0003_source_files_rls.sql`
+7. `database/policies/0003_source_files_storage.sql`
 
 Enable email auth in Supabase Authentication settings. For local development you may disable email confirmation temporarily.
 
@@ -103,9 +106,9 @@ pnpm dev:api
 
 ## Current milestone
 
-**Milestone 2 — Project Management**
+**Milestone 3 — Private File Upload**
 
-Create, list, edit, archive, and delete projects with RLS ownership checks. Dashboard shows recent projects and counts.
+Secure private uploads (PDF, DOCX, TXT, MP4, MOV) attached to projects, with signed downloads and ownership RLS on metadata and storage.
 
 ---
 

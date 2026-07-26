@@ -33,6 +33,31 @@ export type Project = {
   updated_at: string;
 };
 
+export type SourceFileType = "pdf" | "docx" | "txt" | "mp4" | "mov";
+export type SourceProcessingStatus =
+  | "uploading"
+  | "uploaded"
+  | "processing"
+  | "ready"
+  | "failed";
+
+export type SourceFile = {
+  id: string;
+  user_id: string;
+  project_id: string;
+  original_filename: string;
+  internal_storage_path: string;
+  file_type: SourceFileType;
+  mime_type: string;
+  file_size: number;
+  processing_status: SourceProcessingStatus;
+  page_count: number | null;
+  video_duration_seconds: number | null;
+  error_message: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -85,12 +110,47 @@ export type Database = {
         };
         Relationships: [];
       };
+      source_files: {
+        Row: SourceFile;
+        Insert: {
+          id?: string;
+          user_id: string;
+          project_id: string;
+          original_filename: string;
+          internal_storage_path: string;
+          file_type: SourceFileType;
+          mime_type: string;
+          file_size: number;
+          processing_status?: SourceProcessingStatus;
+          page_count?: number | null;
+          video_duration_seconds?: number | null;
+          error_message?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          original_filename?: string;
+          internal_storage_path?: string;
+          file_type?: SourceFileType;
+          mime_type?: string;
+          file_size?: number;
+          processing_status?: SourceProcessingStatus;
+          page_count?: number | null;
+          video_duration_seconds?: number | null;
+          error_message?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
     Enums: {
       project_type: ProjectType;
       project_status: ProjectStatus;
+      source_file_type: SourceFileType;
+      source_processing_status: SourceProcessingStatus;
     };
     CompositeTypes: Record<string, never>;
   };

@@ -21,12 +21,16 @@
 - Only `NEXT_PUBLIC_*` values may appear in browser bundles.
 - `SUPABASE_SERVICE_ROLE_KEY` and `SUPABASE_JWT_SECRET` are server-only.
 
-## Private storage (from Milestone 3)
+## Private storage (Milestone 3)
 
-- Private buckets only.
-- Short-lived signed URLs.
-- Validate MIME type, extension, and size.
-- Generate safe internal paths; never trust client-supplied paths.
+- Private bucket `source-files` only (`public = false`).
+- Storage policies require the first path segment to equal `auth.uid()`.
+- Metadata RLS requires `user_id = auth.uid()` and project ownership on insert.
+- Short-lived signed URLs (120 seconds) for downloads.
+- Validate MIME type, extension, and size on client and server.
+- Block common executable/script extensions.
+- Generate safe internal paths server-side; never trust client-supplied paths.
+- No public object URLs for creator content.
 
 ## API security (expanding in later milestones)
 

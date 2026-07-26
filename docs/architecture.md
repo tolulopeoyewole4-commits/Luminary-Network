@@ -40,10 +40,20 @@ Browser
 - Ownership is enforced by Supabase RLS (`auth.uid() = user_id`) and by querying only the authenticated session.
 - Dashboard and `/projects` pages list the current user's projects with empty and error states.
 
+## Private uploads (Milestone 3)
+
+1. Client validates extension, MIME, and size.
+2. Server action verifies project ownership and inserts a `source_files` row (`uploading`).
+3. Client uploads bytes to the private bucket at the server-provided path (progress via XHR).
+4. Server verifies the object exists and marks the row `uploaded`.
+5. Downloads go through `createSignedUrl` (short expiry); public URLs are never used.
+
 ## Storage
 
-- Supabase Storage (private buckets) starting Milestone 3.
-- Signed URLs with short expiry; no public URLs for creator content.
+- Private Supabase Storage bucket: `source-files`.
+- Object paths are server-generated: `{user_id}/{project_id}/{uuid}.{ext}`.
+- Browser uploads use the authenticated user JWT; downloads use short-lived signed URLs.
+- Metadata lives in `source_files` and is protected by RLS.
 
 ## AI layer
 

@@ -2,6 +2,17 @@
 
 All notable changes to Luminary AI are documented here.
 
+## [0.3.0] — Milestone 3
+
+### Added
+
+- `source_files` migration and owner-scoped RLS.
+- Private Supabase Storage bucket `source-files` with path policies `{user_id}/{project_id}/...`.
+- Secure upload flow with validation, progress, finalize/fail handlers.
+- Short-lived signed download URLs (2 minutes).
+- Project overview source library with delete support.
+- Upload validation tests and SQL/storage contract tests.
+
 ## [0.2.0] — Milestone 2
 
 ### Added
