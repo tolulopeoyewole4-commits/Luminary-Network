@@ -15,6 +15,13 @@ import {
   validateSocialGeneratorInput,
   type SocialGeneratorFieldErrors,
 } from "@/lib/content/validation";
+import {
+  bumpProcessingJobProgressIfActive,
+  completeProcessingJobIfActive,
+  failProcessingJobIfActive,
+  isProcessingJobActive,
+  markProcessingJobRunningIfActive,
+} from "@/lib/jobs/cancellation";
 import { isAsyncAiGenerationEnabled } from "@/lib/jobs/flags";
 import { createClient } from "@/lib/supabase/server";
 
@@ -226,16 +233,10 @@ async function executeSocialGenerate(
   const supabase = await createClient();
   const { projectId, jobId, userId, input } = work;
 
-  await supabase
-    .from("processing_jobs")
-    .update({
-      status: "processing",
-      progress_percentage: 15,
-      started_at: new Date().toISOString(),
-      error_message: null,
-      completed_at: null,
-    })
-    .eq("id", jobId);
+  const started = await markProcessingJobRunningIfActive(supabase, jobId, 15);
+  if (!started) {
+    return { ok: false, message: "This job was cancelled." };
+  }
 
   try {
     const { data: sections, error: sectionsError } = await supabase
@@ -249,10 +250,10 @@ async function executeSocialGenerate(
       throw new Error("Unable to load the selected source sections.");
     }
 
-    await supabase
-      .from("processing_jobs")
-      .update({ progress_percentage: 40 })
-      .eq("id", jobId);
+    await bumpProcessingJobProgressIfActive(supabase, jobId, 40);
+    if (!(await isProcessingJobActive(supabase, jobId))) {
+      return { ok: false, message: "This job was cancelled." };
+    }
 
     const provider = getAIProvider();
     const outputs = await provider.generateSocialContent({
@@ -272,10 +273,10 @@ async function executeSocialGenerate(
       })),
     });
 
-    await supabase
-      .from("processing_jobs")
-      .update({ progress_percentage: 70 })
-      .eq("id", jobId);
+    await bumpProcessingJobProgressIfActive(supabase, jobId, 70);
+    if (!(await isProcessingJobActive(supabase, jobId))) {
+      return { ok: false, message: "This job was cancelled." };
+    }
 
     const rows = outputs.map((output) => ({
       user_id: userId,
@@ -309,16 +310,12 @@ async function executeSocialGenerate(
       resultContentIds: createdIds,
     };
 
-    await supabase
-      .from("processing_jobs")
-      .update({
-        status: "completed",
-        progress_percentage: 100,
-        completed_at: new Date().toISOString(),
-        error_message: null,
-        payload: completedPayload,
-      })
-      .eq("id", jobId);
+    const completed = await completeProcessingJobIfActive(supabase, jobId, {
+      payload: completedPayload,
+    });
+    if (!completed) {
+      return { ok: false, message: "This job was cancelled." };
+    }
 
     revalidatePath("/dashboard");
     revalidatePath(`/projects/${projectId}`);
@@ -336,16 +333,7 @@ async function executeSocialGenerate(
         ? error.message
         : "Content generation failed. Please try again.";
 
-    await supabase
-      .from("processing_jobs")
-      .update({
-        status: "failed",
-        progress_percentage: 100,
-        completed_at: new Date().toISOString(),
-        error_message: message.slice(0, 500),
-      })
-      .eq("id", jobId);
-
+    await failProcessingJobIfActive(supabase, jobId, message);
     revalidatePath(`/projects/${projectId}`);
     return { ok: false, message };
   }

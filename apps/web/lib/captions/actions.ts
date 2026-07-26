@@ -9,6 +9,13 @@ import {
   buildSrt,
   buildWebVtt,
 } from "@/lib/captions/format";
+import {
+  bumpProcessingJobProgressIfActive,
+  completeProcessingJobIfActive,
+  failProcessingJobIfActive,
+  isProcessingJobActive,
+  markProcessingJobRunningIfActive,
+} from "@/lib/jobs/cancellation";
 import { isAsyncMockVideoJobsEnabled } from "@/lib/jobs/flags";
 import { createClient } from "@/lib/supabase/server";
 import { buildMockTranscriptSegments } from "@/lib/transcripts/mock";
@@ -148,16 +155,10 @@ async function executeCaptionGenerate(
     title,
   } = work;
 
-  await supabase
-    .from("processing_jobs")
-    .update({
-      status: "processing",
-      progress_percentage: 10,
-      started_at: new Date().toISOString(),
-      error_message: null,
-      completed_at: null,
-    })
-    .eq("id", jobId);
+  const started = await markProcessingJobRunningIfActive(supabase, jobId, 10);
+  if (!started) {
+    return { ok: false, error: "This job was cancelled." };
+  }
 
   try {
     const { transcript } = await getTranscriptForSourceFile(
@@ -165,10 +166,10 @@ async function executeCaptionGenerate(
       sourceFileId,
     );
 
-    await supabase
-      .from("processing_jobs")
-      .update({ progress_percentage: 40 })
-      .eq("id", jobId);
+    await bumpProcessingJobProgressIfActive(supabase, jobId, 40);
+    if (!(await isProcessingJobActive(supabase, jobId))) {
+      return { ok: false, error: "This job was cancelled." };
+    }
 
     const segments =
       transcript?.segments.map((segment) => ({
@@ -230,10 +231,7 @@ async function executeCaptionGenerate(
       captionId = created.id;
     }
 
-    await supabase
-      .from("processing_jobs")
-      .update({ progress_percentage: 70 })
-      .eq("id", jobId);
+    await bumpProcessingJobProgressIfActive(supabase, jobId, 70);
 
     const rows = cues.map((cue) => ({
       caption_id: captionId!,
@@ -246,15 +244,10 @@ async function executeCaptionGenerate(
     const { error: cuesError } = await supabase.from("caption_cues").insert(rows);
     if (cuesError) throw new Error("Unable to save caption cues.");
 
-    await supabase
-      .from("processing_jobs")
-      .update({
-        status: "completed",
-        progress_percentage: 100,
-        completed_at: new Date().toISOString(),
-        error_message: null,
-      })
-      .eq("id", jobId);
+    const completed = await completeProcessingJobIfActive(supabase, jobId);
+    if (!completed) {
+      return { ok: false, error: "This job was cancelled." };
+    }
 
     revalidateCaptionPaths(projectId, sourceFileId);
 
@@ -270,16 +263,7 @@ async function executeCaptionGenerate(
     const message =
       err instanceof Error ? err.message : "Caption generation failed.";
 
-    await supabase
-      .from("processing_jobs")
-      .update({
-        status: "failed",
-        progress_percentage: 100,
-        completed_at: new Date().toISOString(),
-        error_message: message.slice(0, 500),
-      })
-      .eq("id", jobId);
-
+    await failProcessingJobIfActive(supabase, jobId, message);
     revalidateCaptionPaths(projectId, sourceFileId);
     return { ok: false, error: message };
   }

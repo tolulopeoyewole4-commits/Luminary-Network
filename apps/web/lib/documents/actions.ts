@@ -5,6 +5,13 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { isDocumentProcessableType } from "@/lib/documents/constants";
+import {
+  bumpProcessingJobProgressIfActive,
+  completeProcessingJobIfActive,
+  failProcessingJobIfActive,
+  isProcessingJobActive,
+  markProcessingJobRunningIfActive,
+} from "@/lib/jobs/cancellation";
 import { isAsyncDocumentExtractEnabled } from "@/lib/jobs/flags";
 import { createClient } from "@/lib/supabase/server";
 import { SOURCE_STORAGE_BUCKET } from "@/lib/uploads/constants";
@@ -189,16 +196,10 @@ async function executeDocumentExtract(
     fileType,
   } = work;
 
-  await supabase
-    .from("processing_jobs")
-    .update({
-      status: "processing",
-      progress_percentage: 10,
-      started_at: new Date().toISOString(),
-      error_message: null,
-      completed_at: null,
-    })
-    .eq("id", jobId);
+  const started = await markProcessingJobRunningIfActive(supabase, jobId, 10);
+  if (!started) {
+    return { ok: false, error: "This job was cancelled." };
+  }
 
   try {
     const { data: blob, error: downloadError } = await supabase.storage
@@ -211,10 +212,7 @@ async function executeDocumentExtract(
       );
     }
 
-    await supabase
-      .from("processing_jobs")
-      .update({ progress_percentage: 40 })
-      .eq("id", jobId);
+    await bumpProcessingJobProgressIfActive(supabase, jobId, 40);
 
     const form = new FormData();
     form.append("file", blob, originalFilename);
@@ -239,10 +237,11 @@ async function executeDocumentExtract(
       );
     }
 
-    await supabase
-      .from("processing_jobs")
-      .update({ progress_percentage: 75 })
-      .eq("id", jobId);
+    await bumpProcessingJobProgressIfActive(supabase, jobId, 75);
+
+    if (!(await isProcessingJobActive(supabase, jobId))) {
+      return { ok: false, error: "This job was cancelled." };
+    }
 
     const { error: deleteError } = await supabase
       .from("document_sections")
@@ -274,6 +273,11 @@ async function executeDocumentExtract(
       }
     }
 
+    const completed = await completeProcessingJobIfActive(supabase, jobId);
+    if (!completed) {
+      return { ok: false, error: "This job was cancelled." };
+    }
+
     await supabase
       .from("source_files")
       .update({
@@ -282,16 +286,6 @@ async function executeDocumentExtract(
         error_message: null,
       })
       .eq("id", sourceFileId);
-
-    await supabase
-      .from("processing_jobs")
-      .update({
-        status: "completed",
-        progress_percentage: 100,
-        completed_at: new Date().toISOString(),
-        error_message: null,
-      })
-      .eq("id", jobId);
 
     revalidateDocumentPaths(projectId, sourceFileId);
 
@@ -306,23 +300,16 @@ async function executeDocumentExtract(
     const message =
       err instanceof Error ? err.message : "Document processing failed.";
 
-    await supabase
-      .from("source_files")
-      .update({
-        processing_status: "failed",
-        error_message: message.slice(0, 500),
-      })
-      .eq("id", sourceFileId);
-
-    await supabase
-      .from("processing_jobs")
-      .update({
-        status: "failed",
-        progress_percentage: 100,
-        completed_at: new Date().toISOString(),
-        error_message: message.slice(0, 500),
-      })
-      .eq("id", jobId);
+    const failed = await failProcessingJobIfActive(supabase, jobId, message);
+    if (failed) {
+      await supabase
+        .from("source_files")
+        .update({
+          processing_status: "failed",
+          error_message: message.slice(0, 500),
+        })
+        .eq("id", sourceFileId);
+    }
 
     revalidateDocumentPaths(projectId, sourceFileId);
 

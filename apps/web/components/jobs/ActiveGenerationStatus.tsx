@@ -22,7 +22,9 @@ export function ActiveGenerationStatus({
     (job) => job.status === "queued" || job.status === "processing",
   );
   const latestCompleted = relevant.find((job) => job.status === "completed");
-  const latestFailed = relevant.find((job) => job.status === "failed");
+  const latestFailed = relevant.find(
+    (job) => job.status === "failed" || job.status === "cancelled",
+  );
 
   const completedLink = latestCompleted
     ? getJobResultLink(latestCompleted)
@@ -61,7 +63,11 @@ export function ActiveGenerationStatus({
       ) : null}
       {active.length === 0 && latestFailed ? (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-          <p className="font-semibold">Latest generation failed</p>
+          <p className="font-semibold">
+            {latestFailed.status === "cancelled"
+              ? "Latest generation cancelled"
+              : "Latest generation failed"}
+          </p>
           <p className="mt-1">
             {latestFailed.error_message || "Retry from the project jobs list."}
           </p>

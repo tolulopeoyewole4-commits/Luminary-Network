@@ -5,6 +5,13 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { buildMockClipCandidates } from "@/lib/clips/mock";
+import {
+  bumpProcessingJobProgressIfActive,
+  completeProcessingJobIfActive,
+  failProcessingJobIfActive,
+  isProcessingJobActive,
+  markProcessingJobRunningIfActive,
+} from "@/lib/jobs/cancellation";
 import { isAsyncMockVideoJobsEnabled } from "@/lib/jobs/flags";
 import { createClient } from "@/lib/supabase/server";
 import { getTranscriptForSourceFile } from "@/lib/transcripts/queries";
@@ -140,16 +147,10 @@ async function executeClipDetect(
     title,
   } = work;
 
-  await supabase
-    .from("processing_jobs")
-    .update({
-      status: "processing",
-      progress_percentage: 10,
-      started_at: new Date().toISOString(),
-      error_message: null,
-      completed_at: null,
-    })
-    .eq("id", jobId);
+  const started = await markProcessingJobRunningIfActive(supabase, jobId, 10);
+  if (!started) {
+    return { ok: false, error: "This job was cancelled." };
+  }
 
   try {
     const { transcript } = await getTranscriptForSourceFile(
@@ -157,10 +158,7 @@ async function executeClipDetect(
       sourceFileId,
     );
 
-    await supabase
-      .from("processing_jobs")
-      .update({ progress_percentage: 40 })
-      .eq("id", jobId);
+    await bumpProcessingJobProgressIfActive(supabase, jobId, 40);
 
     const mocks = buildMockClipCandidates({
       durationSeconds,
@@ -173,6 +171,10 @@ async function executeClipDetect(
       })),
     });
 
+    if (!(await isProcessingJobActive(supabase, jobId))) {
+      return { ok: false, error: "This job was cancelled." };
+    }
+
     // Replace prior suggestions for this source (keep approved/exported).
     await supabase
       .from("clip_candidates")
@@ -180,10 +182,7 @@ async function executeClipDetect(
       .eq("source_file_id", sourceFileId)
       .in("status", ["suggested", "rejected"]);
 
-    await supabase
-      .from("processing_jobs")
-      .update({ progress_percentage: 70 })
-      .eq("id", jobId);
+    await bumpProcessingJobProgressIfActive(supabase, jobId, 70);
 
     const rows = mocks.map((clip) => ({
       user_id: userId,
@@ -207,15 +206,10 @@ async function executeClipDetect(
       throw new Error("Unable to save clip candidates.");
     }
 
-    await supabase
-      .from("processing_jobs")
-      .update({
-        status: "completed",
-        progress_percentage: 100,
-        completed_at: new Date().toISOString(),
-        error_message: null,
-      })
-      .eq("id", jobId);
+    const completed = await completeProcessingJobIfActive(supabase, jobId);
+    if (!completed) {
+      return { ok: false, error: "This job was cancelled." };
+    }
 
     revalidateClipPaths(projectId, sourceFileId);
 
@@ -229,16 +223,7 @@ async function executeClipDetect(
     const message =
       err instanceof Error ? err.message : "Clip detection failed.";
 
-    await supabase
-      .from("processing_jobs")
-      .update({
-        status: "failed",
-        progress_percentage: 100,
-        completed_at: new Date().toISOString(),
-        error_message: message.slice(0, 500),
-      })
-      .eq("id", jobId);
-
+    await failProcessingJobIfActive(supabase, jobId, message);
     revalidateClipPaths(projectId, sourceFileId);
     return { ok: false, error: message };
   }

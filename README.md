@@ -112,9 +112,9 @@ pnpm health:api
 
 ## Current milestone
 
-**Milestone 19 — Job result links**
+**Milestone 20 — Cancel processing jobs**
 
-Completed processing jobs deep-link to the right output (course, content, transcript, clips, captions). Course/social generator pages show live job status with auto-refresh.
+Creators can cancel queued/processing jobs from the jobs list. In-flight workers cooperatively stop writing results after cancel; cancelled jobs can be retried.
 
 - Release steps: [`docs/release-checklist.md`](docs/release-checklist.md)
 - Host setup: [`docs/deployment.md`](docs/deployment.md)

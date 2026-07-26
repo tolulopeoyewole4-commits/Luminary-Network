@@ -11,6 +11,13 @@ import {
   validateCourseGeneratorInput,
   type CourseGeneratorFieldErrors,
 } from "@/lib/courses/validation";
+import {
+  bumpProcessingJobProgressIfActive,
+  completeProcessingJobIfActive,
+  failProcessingJobIfActive,
+  isProcessingJobActive,
+  markProcessingJobRunningIfActive,
+} from "@/lib/jobs/cancellation";
 import { isAsyncAiGenerationEnabled } from "@/lib/jobs/flags";
 import { createClient } from "@/lib/supabase/server";
 
@@ -228,16 +235,10 @@ async function executeCourseGenerate(
   const supabase = await createClient();
   const { projectId, jobId, userId, input } = work;
 
-  await supabase
-    .from("processing_jobs")
-    .update({
-      status: "processing",
-      progress_percentage: 15,
-      started_at: new Date().toISOString(),
-      error_message: null,
-      completed_at: null,
-    })
-    .eq("id", jobId);
+  const started = await markProcessingJobRunningIfActive(supabase, jobId, 15);
+  if (!started) {
+    return { ok: false, message: "This job was cancelled." };
+  }
 
   try {
     const { data: sections, error: sectionsError } = await supabase
@@ -251,10 +252,10 @@ async function executeCourseGenerate(
       throw new Error("Unable to load the selected source sections.");
     }
 
-    await supabase
-      .from("processing_jobs")
-      .update({ progress_percentage: 40 })
-      .eq("id", jobId);
+    await bumpProcessingJobProgressIfActive(supabase, jobId, 40);
+    if (!(await isProcessingJobActive(supabase, jobId))) {
+      return { ok: false, message: "This job was cancelled." };
+    }
 
     const provider = getAIProvider();
     const outline = await provider.generateCourseOutline({
@@ -273,10 +274,10 @@ async function executeCourseGenerate(
       })),
     });
 
-    await supabase
-      .from("processing_jobs")
-      .update({ progress_percentage: 70 })
-      .eq("id", jobId);
+    await bumpProcessingJobProgressIfActive(supabase, jobId, 70);
+    if (!(await isProcessingJobActive(supabase, jobId))) {
+      return { ok: false, message: "This job was cancelled." };
+    }
 
     const { data: course, error: courseError } = await supabase
       .from("courses")
@@ -345,16 +346,12 @@ async function executeCourseGenerate(
       resultCourseId: course.id,
     };
 
-    await supabase
-      .from("processing_jobs")
-      .update({
-        status: "completed",
-        progress_percentage: 100,
-        completed_at: new Date().toISOString(),
-        error_message: null,
-        payload: completedPayload,
-      })
-      .eq("id", jobId);
+    const completed = await completeProcessingJobIfActive(supabase, jobId, {
+      payload: completedPayload,
+    });
+    if (!completed) {
+      return { ok: false, message: "This job was cancelled." };
+    }
 
     revalidatePath("/dashboard");
     revalidatePath(`/projects/${projectId}`);
@@ -373,16 +370,7 @@ async function executeCourseGenerate(
         ? error.message
         : "Course generation failed. Please try again.";
 
-    await supabase
-      .from("processing_jobs")
-      .update({
-        status: "failed",
-        progress_percentage: 100,
-        completed_at: new Date().toISOString(),
-        error_message: message.slice(0, 500),
-      })
-      .eq("id", jobId);
-
+    await failProcessingJobIfActive(supabase, jobId, message);
     revalidatePath(`/projects/${projectId}`);
     return { ok: false, message };
   }

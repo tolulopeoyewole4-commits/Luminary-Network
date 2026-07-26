@@ -28,7 +28,7 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 
 ## Current milestone
 
-**Milestone 19 — Job result links** (complete)
+**Milestone 20 — Cancel processing jobs** (complete)
 
 ## Completed milestones
 
@@ -52,6 +52,7 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 - **Milestone 17 — Async mock video jobs**: enqueue `video_transcribe` / `clip_detect` / `caption_generate` via `after()` (`ASYNC_MOCK_VIDEO_JOBS`).
 - **Milestone 18 — Async AI generation**: enqueue `course_generate` / `social_generate` via `after()` (`ASYNC_AI_GENERATION`), store retry payload on jobs.
 - **Milestone 19 — Job result links**: jobs list deep-links to completed outputs; generator pages show live AI job status.
+- **Milestone 20 — Cancel processing jobs**: cancel queued/processing jobs; cooperative in-flight guards; retry cancelled jobs.
 
 ## Known issues
 
@@ -60,9 +61,9 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 - Paid AI providers remain disabled until `AI_PROVIDER` is explicitly extended beyond `mock`.
 - Transcripts are mocked (no speech-to-text provider); replace `buildMockTranscriptSegments` when a real STT API is approved.
 - Clip detection is mocked (no scene/ASR ranking model); replace `buildMockClipCandidates` when a real detector is approved.
-- Apply migration `0012_ai_generation_jobs.sql` (or rebundle) before using async course/social jobs in an existing Supabase project.
+- Apply migrations through `0013_cancel_processing_jobs.sql` (or rebundle) on existing Supabase projects.
 
 ## Next tasks
 
-- Operator cutover using `docs/release-checklist.md` (merge PRs #1→#19, apply SQL bundle including `0012`, deploy API + web).
+- Operator cutover using `docs/release-checklist.md` (merge PRs #1→#20, apply SQL bundle including `0013`, deploy API + web).
 - Optional: dedicated worker queue; paid AI providers; real STT/caption providers.

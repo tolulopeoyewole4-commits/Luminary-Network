@@ -94,7 +94,8 @@ export type ProcessingJobStatus =
   | "queued"
   | "processing"
   | "completed"
-  | "failed";
+  | "failed"
+  | "cancelled";
 
 export type ProcessingJob = {
   id: string;

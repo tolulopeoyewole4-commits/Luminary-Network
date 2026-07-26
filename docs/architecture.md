@@ -135,6 +135,13 @@ Browser
 2. Course/social completed jobs read `payload.resultCourseId` / `payload.resultContentIds`.
 3. The jobs list shows that deep-link CTA; generator pages poll while `course_generate` / `social_generate` are queued or processing.
 
+## Job cancellation (Milestone 20)
+
+1. Creators can cancel jobs while status is `queued` or `processing`.
+2. Cancel sets status `cancelled` and restores source-file status for extract/metadata jobs when appropriate.
+3. In-flight `after()` workers use cooperative helpers (`mark/complete/fail…IfActive`) so they cannot overwrite a cancelled row.
+4. Cancelled jobs are retryable from the jobs list (same as failed).
+
 ## Storage
 
 - Private Supabase Storage bucket: `source-files`.

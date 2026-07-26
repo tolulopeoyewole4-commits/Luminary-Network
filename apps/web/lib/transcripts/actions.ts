@@ -4,6 +4,13 @@ import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import {
+  bumpProcessingJobProgressIfActive,
+  completeProcessingJobIfActive,
+  failProcessingJobIfActive,
+  isProcessingJobActive,
+  markProcessingJobRunningIfActive,
+} from "@/lib/jobs/cancellation";
 import { isAsyncMockVideoJobsEnabled } from "@/lib/jobs/flags";
 import { createClient } from "@/lib/supabase/server";
 import { buildMockTranscriptSegments } from "@/lib/transcripts/mock";
@@ -138,16 +145,10 @@ async function executeMockTranscript(
     title,
   } = work;
 
-  await supabase
-    .from("processing_jobs")
-    .update({
-      status: "processing",
-      progress_percentage: 10,
-      started_at: new Date().toISOString(),
-      error_message: null,
-      completed_at: null,
-    })
-    .eq("id", jobId);
+  const started = await markProcessingJobRunningIfActive(supabase, jobId, 10);
+  if (!started) {
+    return { ok: false, error: "This job was cancelled." };
+  }
 
   try {
     const mockSegments = buildMockTranscriptSegments({
@@ -156,10 +157,10 @@ async function executeMockTranscript(
     });
     const fullText = mockSegments.map((segment) => segment.text).join(" ");
 
-    await supabase
-      .from("processing_jobs")
-      .update({ progress_percentage: 40 })
-      .eq("id", jobId);
+    await bumpProcessingJobProgressIfActive(supabase, jobId, 40);
+    if (!(await isProcessingJobActive(supabase, jobId))) {
+      return { ok: false, error: "This job was cancelled." };
+    }
 
     const { data: existing } = await supabase
       .from("transcripts")
@@ -208,10 +209,7 @@ async function executeMockTranscript(
       transcriptId = created.id;
     }
 
-    await supabase
-      .from("processing_jobs")
-      .update({ progress_percentage: 70 })
-      .eq("id", jobId);
+    await bumpProcessingJobProgressIfActive(supabase, jobId, 70);
 
     const rows = mockSegments.map((segment) => ({
       transcript_id: transcriptId!,
@@ -231,15 +229,10 @@ async function executeMockTranscript(
       throw new Error("Unable to save transcript segments.");
     }
 
-    await supabase
-      .from("processing_jobs")
-      .update({
-        status: "completed",
-        progress_percentage: 100,
-        completed_at: new Date().toISOString(),
-        error_message: null,
-      })
-      .eq("id", jobId);
+    const completed = await completeProcessingJobIfActive(supabase, jobId);
+    if (!completed) {
+      return { ok: false, error: "This job was cancelled." };
+    }
 
     revalidateTranscriptPaths(projectId, sourceFileId);
 
@@ -253,16 +246,7 @@ async function executeMockTranscript(
     const message =
       err instanceof Error ? err.message : "Transcript generation failed.";
 
-    await supabase
-      .from("processing_jobs")
-      .update({
-        status: "failed",
-        progress_percentage: 100,
-        completed_at: new Date().toISOString(),
-        error_message: message.slice(0, 500),
-      })
-      .eq("id", jobId);
-
+    await failProcessingJobIfActive(supabase, jobId, message);
     revalidateTranscriptPaths(projectId, sourceFileId);
     return { ok: false, error: message };
   }

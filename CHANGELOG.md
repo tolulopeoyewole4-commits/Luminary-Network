@@ -2,6 +2,15 @@
 
 All notable changes to Luminary AI are documented here.
 
+## [0.20.0] — Milestone 20
+
+### Added
+
+- Cancel queued/processing jobs from the jobs list (`cancelled` status).
+- Cooperative cancellation helpers so in-flight `after()` work cannot overwrite a cancelled job.
+- Retry support for cancelled jobs; document/video cancel restores source-file status.
+- Migration `0013_cancel_processing_jobs.sql` + unit/SQL contract coverage.
+
 ## [0.19.0] — Milestone 19
 
 ### Added

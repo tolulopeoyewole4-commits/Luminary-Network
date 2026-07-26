@@ -4,6 +4,14 @@ import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import {
+  bumpProcessingJobProgressIfActive,
+  completeProcessingJobIfActive,
+  failProcessingJobIfActive,
+  isCancellableJob,
+  isRetryableJob,
+  markProcessingJobRunningIfActive,
+} from "@/lib/jobs/cancellation";
 import { isAsyncVideoJobsEnabled } from "@/lib/jobs/flags";
 import { createClient } from "@/lib/supabase/server";
 import { SOURCE_STORAGE_BUCKET, VIDEO_FILE_TYPES } from "@/lib/uploads/constants";
@@ -139,16 +147,10 @@ async function executeVideoMetadataJob(input: {
   if (!file) return { ok: false, error: "File not found or inaccessible." };
 
   const jobId = input.jobId;
-
-  await supabase
-    .from("processing_jobs")
-    .update({
-      status: "processing",
-      progress_percentage: 15,
-      started_at: new Date().toISOString(),
-      error_message: null,
-    })
-    .eq("id", jobId);
+  const started = await markProcessingJobRunningIfActive(supabase, jobId, 15);
+  if (!started) {
+    return { ok: false, error: "This job was cancelled." };
+  }
 
   try {
     const { data: blob, error: downloadError } = await supabase.storage
@@ -161,10 +163,7 @@ async function executeVideoMetadataJob(input: {
       );
     }
 
-    await supabase
-      .from("processing_jobs")
-      .update({ progress_percentage: 45 })
-      .eq("id", jobId);
+    await bumpProcessingJobProgressIfActive(supabase, jobId, 45);
 
     const form = new FormData();
     form.append("file", blob, file.original_filename);
@@ -187,10 +186,7 @@ async function executeVideoMetadataJob(input: {
       );
     }
 
-    await supabase
-      .from("processing_jobs")
-      .update({ progress_percentage: 80 })
-      .eq("id", jobId);
+    await bumpProcessingJobProgressIfActive(supabase, jobId, 80);
 
     const { error: updateError } = await supabase
       .from("source_files")
@@ -212,15 +208,10 @@ async function executeVideoMetadataJob(input: {
       throw new Error("Unable to save video metadata.");
     }
 
-    await supabase
-      .from("processing_jobs")
-      .update({
-        status: "completed",
-        progress_percentage: 100,
-        completed_at: new Date().toISOString(),
-        error_message: null,
-      })
-      .eq("id", jobId);
+    const completed = await completeProcessingJobIfActive(supabase, jobId);
+    if (!completed) {
+      return { ok: false, error: "This job was cancelled." };
+    }
 
     revalidatePath("/dashboard");
     revalidatePath(`/projects/${input.projectId}`);
@@ -235,23 +226,16 @@ async function executeVideoMetadataJob(input: {
     const message =
       err instanceof Error ? err.message : "Video processing failed.";
 
-    await supabase
-      .from("source_files")
-      .update({
-        processing_status: "failed",
-        error_message: message.slice(0, 500),
-      })
-      .eq("id", file.id);
-
-    await supabase
-      .from("processing_jobs")
-      .update({
-        status: "failed",
-        progress_percentage: 100,
-        completed_at: new Date().toISOString(),
-        error_message: message.slice(0, 500),
-      })
-      .eq("id", jobId);
+    const failed = await failProcessingJobIfActive(supabase, jobId, message);
+    if (failed) {
+      await supabase
+        .from("source_files")
+        .update({
+          processing_status: "failed",
+          error_message: message.slice(0, 500),
+        })
+        .eq("id", file.id);
+    }
 
     revalidatePath("/dashboard");
     revalidatePath(`/projects/${input.projectId}`);
@@ -308,8 +292,8 @@ export async function retryProcessingJobAction(
     return { ok: false, error: "Processing job not found or inaccessible." };
   }
 
-  if (job.status !== "failed") {
-    return { ok: false, error: "Only failed jobs can be retried." };
+  if (!isRetryableJob(job)) {
+    return { ok: false, error: "Only failed or cancelled jobs can be retried." };
   }
 
   if (job.job_type === "video_metadata") {
@@ -458,5 +442,92 @@ export async function retryProcessingJobAction(
   return {
     ok: false,
     error: `Retry is not implemented for job type "${job.job_type}" yet.`,
+  };
+}
+
+export async function cancelProcessingJobAction(
+  jobId: string,
+): Promise<VideoJobResult> {
+  const { supabase, user } = await requireUser();
+  const { data: job } = await supabase
+    .from("processing_jobs")
+    .select("*")
+    .eq("id", jobId)
+    .maybeSingle();
+
+  if (!job || job.user_id !== user.id) {
+    return { ok: false, error: "Processing job not found or inaccessible." };
+  }
+
+  if (!isCancellableJob(job)) {
+    return {
+      ok: false,
+      error: "Only queued or processing jobs can be cancelled.",
+    };
+  }
+
+  const { data: cancelled, error } = await supabase
+    .from("processing_jobs")
+    .update({
+      status: "cancelled",
+      progress_percentage: job.progress_percentage,
+      completed_at: new Date().toISOString(),
+      error_message: "Cancelled by user.",
+    })
+    .eq("id", job.id)
+    .in("status", ["queued", "processing"])
+    .select("id")
+    .maybeSingle();
+
+  if (error || !cancelled) {
+    return {
+      ok: false,
+      error: "Unable to cancel this job (it may have already finished).",
+    };
+  }
+
+  if (
+    job.source_file_id &&
+    (job.job_type === "document_extract" || job.job_type === "video_metadata")
+  ) {
+    const { file } = await getOwnSourceFile(supabase, job.source_file_id);
+    if (file && file.processing_status === "processing") {
+      const restoreReady =
+        job.job_type === "document_extract"
+          ? file.page_count != null
+          : file.video_duration_seconds != null;
+      await supabase
+        .from("source_files")
+        .update({
+          processing_status: restoreReady ? "ready" : "uploaded",
+          error_message: null,
+        })
+        .eq("id", file.id);
+    }
+  }
+
+  if (job.job_type === "video_export") {
+    await supabase
+      .from("exported_clips")
+      .update({
+        status: "failed",
+        error_message: "Export cancelled by user.",
+      })
+      .eq("processing_job_id", job.id)
+      .eq("status", "processing");
+  }
+
+  revalidatePath("/dashboard");
+  revalidatePath(`/projects/${job.project_id}`);
+  if (job.source_file_id) {
+    revalidatePath(
+      `/projects/${job.project_id}/files/${job.source_file_id}`,
+    );
+  }
+
+  return {
+    ok: true,
+    jobId: job.id,
+    message: "Job cancelled.",
   };
 }

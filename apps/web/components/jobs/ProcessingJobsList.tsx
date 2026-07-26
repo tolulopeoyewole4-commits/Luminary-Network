@@ -6,7 +6,11 @@ import { useEffect, useState, useTransition } from "react";
 
 import { Alert } from "@/components/ui/Alert";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { retryProcessingJobAction } from "@/lib/jobs/actions";
+import {
+  cancelProcessingJobAction,
+  retryProcessingJobAction,
+} from "@/lib/jobs/actions";
+import { isCancellableJob, isRetryableJob } from "@/lib/jobs/cancellation";
 import { getJobResultLink } from "@/lib/jobs/result-links";
 import type { ProcessingJob } from "@/types/database";
 
@@ -15,6 +19,7 @@ const STATUS_STYLES: Record<ProcessingJob["status"], string> = {
   processing: "bg-sky-50 text-sky-800",
   completed: "bg-[var(--accent-soft)] text-[var(--accent-strong)]",
   failed: "bg-red-50 text-red-800",
+  cancelled: "bg-slate-100 text-slate-700",
 };
 
 const JOB_LABELS: Record<ProcessingJob["job_type"], string> = {
@@ -120,7 +125,32 @@ export function ProcessingJobsList({
                       {resultLink.label}
                     </Link>
                   ) : null}
-                  {job.status === "failed" ? (
+                  {isCancellableJob(job) ? (
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      disabled={busy}
+                      onClick={() => {
+                        const confirmed = window.confirm(
+                          "Cancel this processing job?",
+                        );
+                        if (!confirmed) return;
+                        setError(null);
+                        setActiveId(job.id);
+                        startTransition(async () => {
+                          const result = await cancelProcessingJobAction(job.id);
+                          setActiveId(null);
+                          if (!result.ok) {
+                            setError(result.error);
+                          }
+                          router.refresh();
+                        });
+                      }}
+                    >
+                      {busy ? "Cancelling…" : "Cancel"}
+                    </button>
+                  ) : null}
+                  {isRetryableJob(job) ? (
                     <button
                       type="button"
                       className="btn-primary"

@@ -6,6 +6,13 @@ import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import {
+  bumpProcessingJobProgressIfActive,
+  completeProcessingJobIfActive,
+  failProcessingJobIfActive,
+  isProcessingJobActive,
+  markProcessingJobRunningIfActive,
+} from "@/lib/jobs/cancellation";
 import { isAsyncClipExportEnabled } from "@/lib/jobs/flags";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -248,16 +255,10 @@ async function executeClipExport(work: EnqueuedExport): Promise<ExportClipResult
     clipCandidateId,
   } = work;
 
-  await supabase
-    .from("processing_jobs")
-    .update({
-      status: "processing",
-      progress_percentage: 10,
-      started_at: new Date().toISOString(),
-      error_message: null,
-      completed_at: null,
-    })
-    .eq("id", jobId);
+  const started = await markProcessingJobRunningIfActive(supabase, jobId, 10);
+  if (!started) {
+    return { ok: false, error: "This job was cancelled." };
+  }
 
   try {
     const { data: blob, error: downloadError } = await supabase.storage
@@ -270,10 +271,7 @@ async function executeClipExport(work: EnqueuedExport): Promise<ExportClipResult
       );
     }
 
-    await supabase
-      .from("processing_jobs")
-      .update({ progress_percentage: 35 })
-      .eq("id", jobId);
+    await bumpProcessingJobProgressIfActive(supabase, jobId, 35);
 
     const form = new FormData();
     form.append("file", blob, originalFilename);
@@ -304,10 +302,10 @@ async function executeClipExport(work: EnqueuedExport): Promise<ExportClipResult
       throw new Error("Exported clip was empty.");
     }
 
-    await supabase
-      .from("processing_jobs")
-      .update({ progress_percentage: 75 })
-      .eq("id", jobId);
+    await bumpProcessingJobProgressIfActive(supabase, jobId, 75);
+    if (!(await isProcessingJobActive(supabase, jobId))) {
+      return { ok: false, error: "This job was cancelled." };
+    }
 
     if (previousStoragePath && previousStoragePath !== storagePath) {
       await supabase.storage
@@ -342,20 +340,22 @@ async function executeClipExport(work: EnqueuedExport): Promise<ExportClipResult
       throw new Error("Unable to finalize exported clip metadata.");
     }
 
+    const completed = await completeProcessingJobIfActive(supabase, jobId);
+    if (!completed) {
+      await supabase
+        .from("exported_clips")
+        .update({
+          status: "failed",
+          error_message: "Export cancelled by user.",
+        })
+        .eq("id", exportedClipId);
+      return { ok: false, error: "This job was cancelled." };
+    }
+
     await supabase
       .from("clip_candidates")
       .update({ status: "exported" })
       .eq("id", clipCandidateId);
-
-    await supabase
-      .from("processing_jobs")
-      .update({
-        status: "completed",
-        progress_percentage: 100,
-        completed_at: new Date().toISOString(),
-        error_message: null,
-      })
-      .eq("id", jobId);
 
     const { data: signed } = await supabase.storage
       .from(SOURCE_STORAGE_BUCKET)
@@ -373,23 +373,16 @@ async function executeClipExport(work: EnqueuedExport): Promise<ExportClipResult
   } catch (err) {
     const message = err instanceof Error ? err.message : "Clip export failed.";
 
-    await supabase
-      .from("exported_clips")
-      .update({
-        status: "failed",
-        error_message: message.slice(0, 500),
-      })
-      .eq("id", exportedClipId);
-
-    await supabase
-      .from("processing_jobs")
-      .update({
-        status: "failed",
-        progress_percentage: 100,
-        completed_at: new Date().toISOString(),
-        error_message: message.slice(0, 500),
-      })
-      .eq("id", jobId);
+    const failed = await failProcessingJobIfActive(supabase, jobId, message);
+    if (failed) {
+      await supabase
+        .from("exported_clips")
+        .update({
+          status: "failed",
+          error_message: message.slice(0, 500),
+        })
+        .eq("id", exportedClipId);
+    }
 
     revalidateExportPaths(projectId, sourceFileId);
     return { ok: false, error: message };
