@@ -12,6 +12,13 @@ class Settings(BaseSettings):
     # Comma-separated browser origins allowed for CORS (production web URL).
     allowed_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
 
+    # Dedicated job worker (service-role Supabase access; never expose to browser).
+    supabase_url: str = ""
+    supabase_service_role_key: str = ""
+    source_storage_bucket: str = "source-files"
+    worker_poll_seconds: float = 2.0
+    worker_job_types: str = "document_extract,video_metadata,video_export"
+
     def cors_origins(self) -> list[str]:
         defaults = [
             "http://localhost:3000",
@@ -24,6 +31,16 @@ class Settings(BaseSettings):
         ]
         # Preserve order while de-duplicating.
         return list(dict.fromkeys([*defaults, *extras]))
+
+    def worker_configured(self) -> bool:
+        return bool(self.supabase_url.strip() and self.supabase_service_role_key.strip())
+
+    def worker_job_type_list(self) -> list[str]:
+        return [
+            item.strip()
+            for item in self.worker_job_types.split(",")
+            if item.strip()
+        ]
 
 
 settings = Settings()

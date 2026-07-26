@@ -35,3 +35,12 @@ export function isAsyncMockVideoJobsEnabled(): boolean {
 export function isAsyncAiGenerationEnabled(): boolean {
   return envFlagEnabled("ASYNC_AI_GENERATION", true);
 }
+
+/**
+ * When true, heavy media jobs (`document_extract`, `video_metadata`,
+ * `video_export`) stay queued for the FastAPI worker instead of Next.js
+ * `after()`. Default false so local/dev keeps working without a worker process.
+ */
+export function isDedicatedJobWorkerEnabled(): boolean {
+  return envFlagEnabled("DEDICATED_JOB_WORKER", false);
+}

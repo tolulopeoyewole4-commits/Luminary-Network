@@ -49,15 +49,16 @@ Browser
 4. Server verifies the object exists and marks the row `uploaded`.
 5. Downloads go through `createSignedUrl` (short expiry); public URLs are never used.
 
-## Document processing (Milestone 4 + 16)
+## Document processing (Milestone 4 + 16 + 24)
 
 1. A `document_extract` processing job is inserted as `queued`; the source file moves to `processing`.
-2. With `ASYNC_DOCUMENT_EXTRACT=true` (default), the server action returns immediately and continues via Next.js `after()`.
-3. The continuation downloads the private object and posts bytes to FastAPI `/api/v1/documents/extract` using `INTERNAL_API_TOKEN`.
-4. FastAPI extracts text (PyMuPDF / python-docx / plain text), detects headings, and returns sections with page ranges.
-5. Next.js replaces `document_sections` for that file and marks the job completed / file `ready`.
-6. Jobs list and source-file/file pages auto-refresh while queued/processing; failed jobs retry with the same job id.
-7. Set `ASYNC_DOCUMENT_EXTRACT=false` to force synchronous extraction (useful for debugging).
+2. With `DEDICATED_JOB_WORKER=true`, the action returns immediately and a FastAPI worker claims the job (see Dedicated worker queue).
+3. Otherwise, with `ASYNC_DOCUMENT_EXTRACT=true` (default), the server action returns immediately and continues via Next.js `after()`.
+4. The `after()` continuation downloads the private object and posts bytes to FastAPI `/api/v1/documents/extract` using `INTERNAL_API_TOKEN`.
+5. Extraction uses PyMuPDF / python-docx / plain text, detects headings, and returns sections with page ranges.
+6. Sections replace `document_sections` for that file; the job completes and the file becomes `ready`.
+7. Jobs list and source-file/file pages auto-refresh while queued/processing; failed jobs retry with the same job id.
+8. Set `ASYNC_DOCUMENT_EXTRACT=false` (and leave worker mode off) to force synchronous extraction (useful for debugging).
 
 ## Course generation (Milestone 5 + 18)
 
@@ -78,16 +79,16 @@ Browser
 5. Outputs are Zod-validated, include source references, and are stored in `generated_content`; payload records `resultContentIds`.
 6. Creators can edit, duplicate, and archive items; failed jobs retry from the jobs UI.
 
-## Video processing jobs (Milestone 7 + 14)
+## Video processing jobs (Milestone 7 + 14 + 24)
 
 1. MP4/MOV uploads complete through private storage (non-blocking XHR upload).
 2. A `video_metadata` processing job is inserted as `queued`.
-3. With `ASYNC_VIDEO_JOBS=true` (default), the server action returns immediately and continues via Next.js `after()`.
-4. The continuation downloads the private object and posts it to FastAPI `/api/v1/videos/metadata`.
-5. FastAPI uses `ffprobe` to extract duration, dimensions, and codecs.
-6. Results are stored on `source_files` (`video_duration_seconds`, `media_metadata`).
+3. With `DEDICATED_JOB_WORKER=true`, the action returns immediately and a FastAPI worker claims the job.
+4. Otherwise, with `ASYNC_VIDEO_JOBS=true` (default), the server action returns immediately and continues via Next.js `after()`.
+5. The `after()` continuation downloads the private object and posts it to FastAPI `/api/v1/videos/metadata`.
+6. `ffprobe` extracts duration, dimensions, and codecs; results land on `source_files`.
 7. The jobs UI auto-refreshes while status is `queued`/`processing`; failed jobs can be retried.
-8. Set `ASYNC_VIDEO_JOBS=false` to force synchronous metadata processing (useful for debugging).
+8. Set `ASYNC_VIDEO_JOBS=false` (and leave worker mode off) to force synchronous metadata processing.
 
 ## Transcript viewer (Milestone 8 + 17)
 
@@ -109,16 +110,16 @@ Browser
 5. Review UI supports preview seek, edit title/reason/start/end, and approve/reject.
 6. Failed `clip_detect` jobs can be retried from the jobs UI.
 
-## FFmpeg clip export (Milestone 10 + 15)
+## FFmpeg clip export (Milestone 10 + 15 + 24)
 
 1. Creators approve a candidate, then start a `video_export` job (`queued`).
-2. With `ASYNC_CLIP_EXPORT=true` (default), the server action returns immediately and continues via Next.js `after()`.
-3. The continuation downloads the private source and posts it to FastAPI `/api/v1/videos/export-clip` with start/end.
-4. FastAPI cuts the window with FFmpeg (H.264/AAC, faststart) and returns MP4 bytes.
-5. Next.js uploads the result to private storage at `{user_id}/{project_id}/exports/{uuid}.mp4`.
+2. With `DEDICATED_JOB_WORKER=true`, the action returns immediately and a FastAPI worker claims the job.
+3. Otherwise, with `ASYNC_CLIP_EXPORT=true` (default), the server action returns immediately and continues via Next.js `after()`.
+4. The `after()` continuation downloads the private source and posts it to FastAPI `/api/v1/videos/export-clip` with start/end.
+5. FFmpeg cuts the window (H.264/AAC, faststart); the MP4 is stored at `{user_id}/{project_id}/exports/{uuid}.mp4`.
 6. `exported_clips` stores metadata; the candidate status becomes `exported` when ready.
 7. Downloads use short-lived signed URLs; the exports list auto-refreshes while processing; failed jobs can be retried.
-8. Set `ASYNC_CLIP_EXPORT=false` to force synchronous export (useful for debugging).
+8. Set `ASYNC_CLIP_EXPORT=false` (and leave worker mode off) to force synchronous export.
 
 ## Captions (Milestone 11 + 17)
 
@@ -148,6 +149,15 @@ Browser
 2. Content editor downloads Markdown (structured) or plain text (body-first for pasting into social tools).
 3. Exports are generated on demand in server actions; no separate storage objects are created.
 4. Editors can also copy the same export payloads to the clipboard (`copyTextToClipboard`, with `execCommand` fallback).
+
+## Dedicated worker queue (Milestone 24)
+
+1. Migration `0014_job_worker_claim.sql` adds `claim_processing_job(text[])` (service-role only, `FOR UPDATE SKIP LOCKED`).
+2. Set `DEDICATED_JOB_WORKER=true` on the web app so enqueue paths for `document_extract`, `video_metadata`, and `video_export` skip Next.js `after()` and leave rows `queued`.
+3. Run `pnpm worker` (or `docker compose --profile worker up worker`) with `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`.
+4. The worker polls, claims one job, downloads from private storage, runs extract/metadata/export in-process, and writes results with cooperative cancel checks.
+5. Mock/AI jobs (`video_transcribe`, `clip_detect`, `caption_generate`, `course_generate`, `social_generate`) still use `after()` in this milestone.
+6. Default `DEDICATED_JOB_WORKER=false` keeps the existing `after()` path for local/dev without a worker process.
 
 ## Storage
 

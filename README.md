@@ -83,8 +83,13 @@ pnpm dev:web
 # API (http://localhost:8000)
 pnpm dev:api
 
+# Optional: dedicated job worker (pair with DEDICATED_JOB_WORKER=true)
+pnpm worker
+
 # Optional: API via Docker
 docker compose up --build api
+# Optional worker container:
+# docker compose --profile worker up --build worker
 pnpm health:api
 ```
 
@@ -100,6 +105,7 @@ pnpm health:api
 | `pnpm typecheck:web` | TypeScript check |
 | `pnpm test:web` | Frontend tests (Vitest) |
 | `pnpm dev:api` | Start FastAPI |
+| `pnpm worker` | Dedicated job worker (polls Supabase) |
 | `pnpm test:api` | Backend tests |
 | `pnpm test` | All tests |
 | `pnpm gate` | Full local CI gate |
@@ -112,9 +118,9 @@ pnpm health:api
 
 ## Current milestone
 
-**Milestone 23 — Clipboard copy exports**
+**Milestone 24 — Dedicated worker queue**
 
-Copy course Markdown and social content (Markdown or plain text) to the clipboard from the editors, alongside file downloads.
+Optional FastAPI worker claims queued `document_extract` / `video_metadata` / `video_export` jobs when `DEDICATED_JOB_WORKER=true`. Default remains Next.js `after()` for local/dev without a worker process.
 
 - Release steps: [`docs/release-checklist.md`](docs/release-checklist.md)
 - Host setup: [`docs/deployment.md`](docs/deployment.md)

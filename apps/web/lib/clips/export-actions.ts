@@ -13,7 +13,10 @@ import {
   isProcessingJobActive,
   markProcessingJobRunningIfActive,
 } from "@/lib/jobs/cancellation";
-import { isAsyncClipExportEnabled } from "@/lib/jobs/flags";
+import {
+  isAsyncClipExportEnabled,
+  isDedicatedJobWorkerEnabled,
+} from "@/lib/jobs/flags";
 import { createClient } from "@/lib/supabase/server";
 import {
   SIGNED_URL_EXPIRY_SECONDS,
@@ -395,6 +398,17 @@ export async function exportClipCandidateAction(
 ): Promise<ExportClipResult> {
   const queued = await enqueueClipExport(clipCandidateId, options);
   if (!queued.ok) return queued;
+
+  if (isDedicatedJobWorkerEnabled()) {
+    return {
+      ok: true,
+      queued: true,
+      jobId: queued.work.jobId,
+      exportedClipId: queued.work.exportedClipId,
+      message:
+        "Clip export queued for the dedicated worker. Watch progress on the jobs list; download when the export shows ready.",
+    };
+  }
 
   if (isAsyncClipExportEnabled()) {
     after(() => {

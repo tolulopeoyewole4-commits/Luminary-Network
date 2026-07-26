@@ -28,7 +28,7 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 
 ## Current milestone
 
-**Milestone 23 — Clipboard copy exports** (complete)
+**Milestone 24 — Dedicated worker queue** (complete)
 
 ## Completed milestones
 
@@ -56,17 +56,18 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 - **Milestone 21 — Markdown/text exports**: download courses as Markdown; download social content as Markdown or plain text.
 - **Milestone 22 — Next.js proxy migration**: replace deprecated `middleware.ts` with `proxy.ts` session guard.
 - **Milestone 23 — Clipboard copy exports**: copy course Markdown and content Markdown/text to the clipboard.
+- **Milestone 24 — Dedicated worker queue**: FastAPI worker claims heavy media jobs (`DEDICATED_JOB_WORKER`); mock/AI jobs still use `after()`.
 
 ## Known issues
 
 - End-to-end flows require Supabase credentials, applied SQL, and a running FastAPI service with FFmpeg/ffprobe.
-- A dedicated worker queue can still replace `after()` for very large media workloads.
+- With `DEDICATED_JOB_WORKER=true`, run `pnpm worker` (or compose worker); otherwise leave the flag off so `after()` handles heavy jobs.
 - Paid AI providers remain disabled until `AI_PROVIDER` is explicitly extended beyond `mock`.
 - Transcripts are mocked (no speech-to-text provider); replace `buildMockTranscriptSegments` when a real STT API is approved.
 - Clip detection is mocked (no scene/ASR ranking model); replace `buildMockClipCandidates` when a real detector is approved.
-- Apply migrations through `0013_cancel_processing_jobs.sql` (or rebundle) on existing Supabase projects.
+- Apply migrations through `0014_job_worker_claim.sql` (or rebundle) on existing Supabase projects.
 
 ## Next tasks
 
-- Operator cutover using `docs/release-checklist.md` (merge PRs #1→#23, apply SQL bundle including `0013`, deploy API + web).
-- Optional: dedicated worker queue; paid AI providers; real STT/caption providers.
+- Operator cutover using `docs/release-checklist.md` (merge PRs #1→#24, apply SQL bundle including `0014`, deploy API + web).
+- Optional: move mock/AI jobs onto the worker; paid AI providers; real STT/caption providers.

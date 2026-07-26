@@ -12,7 +12,10 @@ import {
   isRetryableJob,
   markProcessingJobRunningIfActive,
 } from "@/lib/jobs/cancellation";
-import { isAsyncVideoJobsEnabled } from "@/lib/jobs/flags";
+import {
+  isAsyncVideoJobsEnabled,
+  isDedicatedJobWorkerEnabled,
+} from "@/lib/jobs/flags";
 import { createClient } from "@/lib/supabase/server";
 import { SOURCE_STORAGE_BUCKET, VIDEO_FILE_TYPES } from "@/lib/uploads/constants";
 import { getOwnSourceFile } from "@/lib/uploads/queries";
@@ -256,6 +259,15 @@ async function runVideoMetadataJob(input: {
     jobId: queued.jobId,
     projectId: queued.file.project_id,
   };
+
+  if (isDedicatedJobWorkerEnabled()) {
+    return {
+      ok: true,
+      jobId: queued.jobId,
+      message:
+        "Video metadata processing queued for the dedicated worker. Progress updates on the dashboard and project jobs list.",
+    };
+  }
 
   if (isAsyncVideoJobsEnabled()) {
     after(() => {

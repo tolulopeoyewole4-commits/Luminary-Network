@@ -6,6 +6,7 @@ import {
   isAsyncDocumentExtractEnabled,
   isAsyncMockVideoJobsEnabled,
   isAsyncVideoJobsEnabled,
+  isDedicatedJobWorkerEnabled,
 } from "@/lib/jobs/flags";
 
 const ORIGINAL_VIDEO = process.env.ASYNC_VIDEO_JOBS;
@@ -13,6 +14,7 @@ const ORIGINAL_EXPORT = process.env.ASYNC_CLIP_EXPORT;
 const ORIGINAL_DOCUMENT = process.env.ASYNC_DOCUMENT_EXTRACT;
 const ORIGINAL_MOCK = process.env.ASYNC_MOCK_VIDEO_JOBS;
 const ORIGINAL_AI = process.env.ASYNC_AI_GENERATION;
+const ORIGINAL_WORKER = process.env.DEDICATED_JOB_WORKER;
 
 afterEach(() => {
   if (ORIGINAL_VIDEO === undefined) {
@@ -39,6 +41,11 @@ afterEach(() => {
     delete process.env.ASYNC_AI_GENERATION;
   } else {
     process.env.ASYNC_AI_GENERATION = ORIGINAL_AI;
+  }
+  if (ORIGINAL_WORKER === undefined) {
+    delete process.env.DEDICATED_JOB_WORKER;
+  } else {
+    process.env.DEDICATED_JOB_WORKER = ORIGINAL_WORKER;
   }
 });
 
@@ -107,5 +114,28 @@ describe("isAsyncAiGenerationEnabled", () => {
   it("can be disabled with falsey values", () => {
     process.env.ASYNC_AI_GENERATION = "false";
     expect(isAsyncAiGenerationEnabled()).toBe(false);
+  });
+});
+
+describe("isDedicatedJobWorkerEnabled", () => {
+  it("defaults to disabled", () => {
+    delete process.env.DEDICATED_JOB_WORKER;
+    expect(isDedicatedJobWorkerEnabled()).toBe(false);
+  });
+
+  it("can be enabled with truthy values", () => {
+    process.env.DEDICATED_JOB_WORKER = "true";
+    expect(isDedicatedJobWorkerEnabled()).toBe(true);
+    process.env.DEDICATED_JOB_WORKER = "1";
+    expect(isDedicatedJobWorkerEnabled()).toBe(true);
+  });
+
+  it("treats falsey values as disabled", () => {
+    process.env.DEDICATED_JOB_WORKER = "false";
+    expect(isDedicatedJobWorkerEnabled()).toBe(false);
+    process.env.DEDICATED_JOB_WORKER = "0";
+    expect(isDedicatedJobWorkerEnabled()).toBe(false);
+    process.env.DEDICATED_JOB_WORKER = "off";
+    expect(isDedicatedJobWorkerEnabled()).toBe(false);
   });
 });

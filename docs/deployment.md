@@ -61,6 +61,7 @@ Alternatively deploy from the monorepo root with the root `vercel.json` helpers;
 | `ASYNC_DOCUMENT_EXTRACT` | optional | default `true` (document extract via `after()`) |
 | `ASYNC_MOCK_VIDEO_JOBS` | optional | default `true` (transcribe/clips/captions via `after()`) |
 | `ASYNC_AI_GENERATION` | optional | default `true` (course/social generate via `after()`) |
+| `DEDICATED_JOB_WORKER` | optional | default `false`; when `true`, heavy media jobs stay queued for the API worker |
 | `MAX_PROJECTS_PER_USER` | optional | default `10` |
 | `MAX_FILES_PER_PROJECT` | optional | default `25` |
 | `MAX_DOCUMENT_UPLOAD_MB` | optional | default `50` |
@@ -83,6 +84,23 @@ The API image is `apps/api/Dockerfile` (Python 3.12 + FFmpeg).
 | `INTERNAL_API_TOKEN` | yes | Must match web |
 | `ALLOWED_ORIGINS` | yes in prod | Comma-separated web origins, e.g. `https://app.example.com` |
 | `MAX_EXTRACT_UPLOAD_MB` | optional | default `55` (metadata/export ceiling is higher in code) |
+| `SUPABASE_URL` | yes for worker | Same project URL as web (service-role client) |
+| `SUPABASE_SERVICE_ROLE_KEY` | yes for worker | Server-only; never expose to browser |
+| `SOURCE_STORAGE_BUCKET` | optional | default `source-files` |
+| `WORKER_POLL_SECONDS` | optional | default `2` |
+| `WORKER_JOB_TYPES` | optional | default `document_extract,video_metadata,video_export` |
+
+### Dedicated worker
+
+When `DEDICATED_JOB_WORKER=true` on the web app, run a second process from the API image:
+
+```bash
+pnpm worker
+# or
+docker compose --profile worker up --build worker
+```
+
+Apply SQL through `0014_job_worker_claim.sql` (or rebundle) before enabling worker mode. `/health` reports `worker_configured` when Supabase service credentials are present.
 
 ### Fly.io (example)
 

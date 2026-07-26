@@ -2,6 +2,16 @@
 
 All notable changes to Luminary AI are documented here.
 
+## [0.24.0] — Milestone 24
+
+### Added
+
+- Dedicated FastAPI job worker (`python -m app.workers.run` / `pnpm worker`) that claims queued heavy media jobs via Supabase service role.
+- Migration `0014_job_worker_claim.sql` (`claim_processing_job` with `FOR UPDATE SKIP LOCKED`).
+- Web flag `DEDICATED_JOB_WORKER` (default off): skip Next.js `after()` for `document_extract`, `video_metadata`, and `video_export`.
+- Docker Compose `worker` profile and `/health` fields for worker configuration.
+- Unit/SQL contract coverage for worker claim, config, and handlers.
+
 ## [0.23.0] — Milestone 23
 
 ### Added

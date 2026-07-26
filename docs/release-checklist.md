@@ -31,10 +31,11 @@ Draft PRs are stacked. Merge **oldest → newest** so each PR’s base lands bef
 | 21 | #21 | `cursor/milestone-21-export-markdown-c4ad` | M20 |
 | 22 | #22 | `cursor/milestone-22-next-proxy-c4ad` | M21 |
 | 23 | #23 | `cursor/milestone-23-clipboard-copy-c4ad` | M22 |
+| 24 | #24 | `cursor/milestone-24-worker-queue-c4ad` | M23 |
 
 After each merge, retarget the next open PR to `main` (or merge via the stack as-is if GitHub keeps parent bases).
 
-Alternative: merge the tip branch `cursor/milestone-23-clipboard-copy-c4ad` (or this release branch) into `main` in one shot once reviews are done.
+Alternative: merge the tip branch `cursor/milestone-24-worker-queue-c4ad` (or this release branch) into `main` in one shot once reviews are done.
 
 ## B. Supabase
 
@@ -50,12 +51,13 @@ Alternative: merge the tip branch `cursor/milestone-23-clipboard-copy-c4ad` (or 
 1. Deploy `apps/api` Docker image (Fly/Render/Railway) with FFmpeg.
 2. Set `INTERNAL_API_TOKEN`, `ALLOWED_ORIGINS`.
 3. `pnpm health:api https://<api-host>` → `status=ok`, `ffmpeg=true`, `ffprobe=true`.
+4. Optional dedicated worker: set `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`, run `python -m app.workers.run`, and set `DEDICATED_JOB_WORKER=true` on web.
 
 ## D. Web (Vercel)
 
 1. Root Directory `apps/web` (or root install + filter build — see `docs/deployment.md`).
 2. Set public Supabase + app/API URLs and matching `INTERNAL_API_TOKEN` / `API_URL`.
-3. Keep `AI_PROVIDER=mock` for MVP.
+3. Keep `AI_PROVIDER=mock` for MVP. Leave `DEDICATED_JOB_WORKER=false` unless a worker process is running.
 4. Smoke: register/login → create project → upload TXT → extract → open viewer.
 5. Generate a course/content item → Download Markdown (and content plain text) or Copy to clipboard.
 

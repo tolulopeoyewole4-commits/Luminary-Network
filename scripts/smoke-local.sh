@@ -11,8 +11,9 @@ pnpm gate
 echo "==> Bundling SQL"
 pnpm sql:bundle
 
-echo "==> Verifying SQL bundle mentions latest cancel-jobs migration"
-grep -q "0013_cancel_processing_jobs.sql" database/dist/supabase_schema.sql
+echo "==> Verifying SQL bundle mentions latest worker-claim migration"
+grep -q "0014_job_worker_claim.sql" database/dist/supabase_schema.sql
+grep -q "claim_processing_job" database/dist/supabase_schema.sql
 grep -q "cancelled" database/dist/supabase_schema.sql
 
 API_URL="${API_URL:-http://localhost:8000}"

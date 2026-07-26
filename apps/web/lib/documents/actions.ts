@@ -12,7 +12,10 @@ import {
   isProcessingJobActive,
   markProcessingJobRunningIfActive,
 } from "@/lib/jobs/cancellation";
-import { isAsyncDocumentExtractEnabled } from "@/lib/jobs/flags";
+import {
+  isAsyncDocumentExtractEnabled,
+  isDedicatedJobWorkerEnabled,
+} from "@/lib/jobs/flags";
 import { createClient } from "@/lib/supabase/server";
 import { SOURCE_STORAGE_BUCKET } from "@/lib/uploads/constants";
 import { getOwnSourceFile } from "@/lib/uploads/queries";
@@ -323,6 +326,16 @@ export async function processDocumentAction(
 ): Promise<ProcessDocumentResult> {
   const queued = await enqueueDocumentExtract(sourceFileId, options);
   if (!queued.ok) return queued;
+
+  if (isDedicatedJobWorkerEnabled()) {
+    return {
+      ok: true,
+      queued: true,
+      jobId: queued.work.jobId,
+      message:
+        "Document extraction queued for the dedicated worker. Watch progress on the jobs list; open the extract when the file shows ready.",
+    };
+  }
 
   if (isAsyncDocumentExtractEnabled()) {
     after(() => {
