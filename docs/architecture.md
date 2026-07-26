@@ -70,6 +70,15 @@ Browser
 3. Outputs are Zod-validated, include source references, and are stored in `generated_content`.
 4. Creators can edit, duplicate, and archive items in the project content library.
 
+## Video processing jobs (Milestone 7)
+
+1. MP4/MOV uploads complete through private storage (non-blocking XHR upload).
+2. A `video_metadata` processing job is queued (`queued` → `processing` → `completed`/`failed`).
+3. Next.js downloads the private object and posts it to FastAPI `/api/v1/videos/metadata`.
+4. FastAPI uses `ffprobe` to extract duration, dimensions, and codecs.
+5. Results are stored on `source_files` (`video_duration_seconds`, `media_metadata`).
+6. Failed jobs can be retried from the jobs UI.
+
 ## Storage
 
 - Private Supabase Storage bucket: `source-files`.

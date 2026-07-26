@@ -41,6 +41,14 @@ export type SourceProcessingStatus =
   | "ready"
   | "failed";
 
+export type SourceFileMediaMetadata = {
+  width?: number | null;
+  height?: number | null;
+  video_codec?: string | null;
+  audio_codec?: string | null;
+  format_name?: string | null;
+};
+
 export type SourceFile = {
   id: string;
   user_id: string;
@@ -53,6 +61,7 @@ export type SourceFile = {
   processing_status: SourceProcessingStatus;
   page_count: number | null;
   video_duration_seconds: number | null;
+  media_metadata: SourceFileMediaMetadata;
   error_message: string | null;
   created_at: string;
   updated_at: string;
@@ -73,6 +82,7 @@ export type DocumentSection = {
 
 export type ProcessingJobType =
   | "document_extract"
+  | "video_metadata"
   | "video_transcribe"
   | "clip_detect"
   | "video_export";
@@ -261,6 +271,7 @@ export type Database = {
           processing_status?: SourceProcessingStatus;
           page_count?: number | null;
           video_duration_seconds?: number | null;
+          media_metadata?: SourceFileMediaMetadata;
           error_message?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -274,6 +285,7 @@ export type Database = {
           processing_status?: SourceProcessingStatus;
           page_count?: number | null;
           video_duration_seconds?: number | null;
+          media_metadata?: SourceFileMediaMetadata;
           error_message?: string | null;
           created_at?: string;
           updated_at?: string;

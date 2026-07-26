@@ -80,6 +80,7 @@ In the Supabase SQL editor, run in order:
 11. `database/policies/0005_courses_rls.sql`
 12. `database/migrations/0006_generated_content.sql`
 13. `database/policies/0006_generated_content_rls.sql`
+14. `database/migrations/0007_video_processing.sql`
 
 Enable email auth in Supabase Authentication settings. For local development you may disable email confirmation temporarily.
 
@@ -112,11 +113,9 @@ pnpm dev:api
 
 ## Current milestone
 
-**Milestone 6 — Social Content Generator**
+**Milestone 7 — Video Upload and Processing Jobs**
 
-Generate editable LinkedIn posts, captions, threads, scripts, newsletters, and blog outlines from selected document sections (`AI_PROVIDER=mock`).
-
-Document extraction still requires the API:
+Private MP4/MOV uploads queue video metadata jobs (duration, dimensions, codecs) with progress, failure states, and retry. FFmpeg/`ffprobe` required on the API host.
 
 ```bash
 # apps/web/.env.local and apps/api/.env

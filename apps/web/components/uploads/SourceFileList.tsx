@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 import { ProcessDocumentButton } from "@/components/documents/ProcessDocumentButton";
+import { ProcessVideoButton } from "@/components/jobs/ProcessVideoButton";
 import { Alert } from "@/components/ui/Alert";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { isDocumentProcessableType } from "@/lib/documents/constants";
@@ -14,6 +15,7 @@ import {
 } from "@/lib/uploads/actions";
 import {
   SOURCE_FILE_TYPE_LABELS,
+  VIDEO_FILE_TYPES,
   type SourceFileType,
   type SourceProcessingStatus,
 } from "@/lib/uploads/constants";
@@ -27,6 +29,14 @@ const STATUS_STYLES: Record<SourceProcessingStatus, string> = {
   ready: "bg-[var(--accent-soft)] text-[var(--accent-strong)]",
   failed: "bg-red-50 text-red-800",
 };
+
+function formatDuration(seconds: number | null): string | null {
+  if (seconds == null || !Number.isFinite(seconds)) return null;
+  const total = Math.max(0, Math.round(seconds));
+  const mins = Math.floor(total / 60);
+  const secs = total % 60;
+  return `${mins}:${String(secs).padStart(2, "0")}`;
+}
 
 type SourceFileListProps = {
   files: SourceFile[];
@@ -87,7 +97,16 @@ export function SourceFileList({ files, projectId }: SourceFileListProps) {
       <ul className="space-y-3">
         {files.map((file) => {
           const busy = pending && activeId === file.id;
-          const canProcess = isDocumentProcessableType(file.file_type);
+          const canProcessDoc = isDocumentProcessableType(file.file_type);
+          const canProcessVideo = (VIDEO_FILE_TYPES as readonly string[]).includes(
+            file.file_type,
+          );
+          const duration = formatDuration(file.video_duration_seconds);
+          const dimensions =
+            file.media_metadata?.width && file.media_metadata?.height
+              ? `${file.media_metadata.width}×${file.media_metadata.height}`
+              : null;
+
           return (
             <li key={file.id} className="surface-card px-5 py-4">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
@@ -99,6 +118,8 @@ export function SourceFileList({ files, projectId }: SourceFileListProps) {
                     {SOURCE_FILE_TYPE_LABELS[file.file_type as SourceFileType]} ·{" "}
                     {formatBytes(file.file_size)}
                     {file.page_count ? ` · ${file.page_count} pages` : ""}
+                    {duration ? ` · ${duration}` : ""}
+                    {dimensions ? ` · ${dimensions}` : ""}
                   </p>
                   {file.error_message ? (
                     <p className="mt-2 text-sm text-red-700">{file.error_message}</p>
@@ -114,11 +135,11 @@ export function SourceFileList({ files, projectId }: SourceFileListProps) {
                     href={`/projects/${projectId}/files/${file.id}`}
                     className="btn-secondary"
                   >
-                    {file.processing_status === "ready"
+                    {file.processing_status === "ready" && canProcessDoc
                       ? "View extract"
                       : "Open"}
                   </Link>
-                  {canProcess &&
+                  {canProcessDoc &&
                   file.processing_status !== "uploading" &&
                   file.processing_status !== "processing" ? (
                     <ProcessDocumentButton
@@ -129,6 +150,19 @@ export function SourceFileList({ files, projectId }: SourceFileListProps) {
                         file.processing_status === "failed"
                           ? "Re-extract"
                           : "Extract text"
+                      }
+                    />
+                  ) : null}
+                  {canProcessVideo &&
+                  file.processing_status !== "uploading" &&
+                  file.processing_status !== "processing" ? (
+                    <ProcessVideoButton
+                      sourceFileId={file.id}
+                      label={
+                        file.processing_status === "ready" ||
+                        file.processing_status === "failed"
+                          ? "Reprocess video"
+                          : "Process video"
                       }
                     />
                   ) : null}

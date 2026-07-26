@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 
 import { DocumentSectionViewer } from "@/components/documents/DocumentSectionViewer";
 import { ProcessDocumentButton } from "@/components/documents/ProcessDocumentButton";
+import { ProcessVideoButton } from "@/components/jobs/ProcessVideoButton";
 import { Alert } from "@/components/ui/Alert";
 import { isDocumentProcessableType } from "@/lib/documents/constants";
 import {
@@ -11,7 +12,10 @@ import {
   listDocumentSections,
 } from "@/lib/documents/queries";
 import { createClient } from "@/lib/supabase/server";
-import { SOURCE_FILE_TYPE_LABELS } from "@/lib/uploads/constants";
+import {
+  SOURCE_FILE_TYPE_LABELS,
+  VIDEO_FILE_TYPES,
+} from "@/lib/uploads/constants";
 import { formatBytes } from "@/lib/uploads/limits";
 import { getOwnSourceFile } from "@/lib/uploads/queries";
 
@@ -26,8 +30,16 @@ export async function generateMetadata({
   const supabase = await createClient();
   const { file } = await getOwnSourceFile(supabase, fileId);
   return {
-    title: file ? file.original_filename : "Document",
+    title: file ? file.original_filename : "Source file",
   };
+}
+
+function formatDuration(seconds: number | null): string | null {
+  if (seconds == null || !Number.isFinite(seconds)) return null;
+  const total = Math.max(0, Math.round(seconds));
+  const mins = Math.floor(total / 60);
+  const secs = total % 60;
+  return `${mins}:${String(secs).padStart(2, "0")}`;
 }
 
 export default async function DocumentViewerPage({
@@ -50,14 +62,19 @@ export default async function DocumentViewerPage({
     getLatestDocumentJob(supabase, file.id),
   ]);
 
-  const canProcess = isDocumentProcessableType(file.file_type);
+  const canProcessDoc = isDocumentProcessableType(file.file_type);
+  const canProcessVideo = (VIDEO_FILE_TYPES as readonly string[]).includes(
+    file.file_type,
+  );
+  const duration = formatDuration(file.video_duration_seconds);
+  const meta = file.media_metadata ?? {};
 
   return (
     <div className="space-y-8">
       <section className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-sm font-medium uppercase tracking-[0.14em] text-accent">
-            Document viewer
+            {canProcessVideo ? "Video source" : "Document viewer"}
           </p>
           <h1 className="mt-2 font-display text-4xl font-semibold tracking-tight">
             {file.original_filename}
@@ -65,6 +82,8 @@ export default async function DocumentViewerPage({
           <p className="mt-2 text-sm text-muted">
             {SOURCE_FILE_TYPE_LABELS[file.file_type]} · {formatBytes(file.file_size)}
             {file.page_count ? ` · ${file.page_count} pages` : ""}
+            {duration ? ` · ${duration}` : ""}
+            {meta.width && meta.height ? ` · ${meta.width}×${meta.height}` : ""}
           </p>
           <div className="mt-3 flex flex-wrap gap-2 text-sm">
             <span className="rounded-lg bg-white/80 px-2.5 py-1 font-semibold capitalize text-muted ring-1 ring-[var(--border)]">
@@ -78,13 +97,19 @@ export default async function DocumentViewerPage({
                   : ""}
               </span>
             ) : null}
+            {meta.video_codec ? (
+              <span className="rounded-lg bg-white/80 px-2.5 py-1 font-semibold text-muted ring-1 ring-[var(--border)]">
+                {meta.video_codec}
+                {meta.audio_codec ? ` / ${meta.audio_codec}` : ""}
+              </span>
+            ) : null}
           </div>
         </div>
         <div className="flex flex-wrap gap-3">
           <Link href={`/projects/${projectId}`} className="btn-secondary">
             Back to project
           </Link>
-          {canProcess ? (
+          {canProcessDoc ? (
             <ProcessDocumentButton
               sourceFileId={file.id}
               projectId={projectId}
@@ -96,6 +121,17 @@ export default async function DocumentViewerPage({
               }
             />
           ) : null}
+          {canProcessVideo ? (
+            <ProcessVideoButton
+              sourceFileId={file.id}
+              label={
+                file.processing_status === "ready" ||
+                file.processing_status === "failed"
+                  ? "Reprocess video"
+                  : "Process video"
+              }
+            />
+          ) : null}
         </div>
       </section>
 
@@ -103,14 +139,14 @@ export default async function DocumentViewerPage({
         <Alert tone="error">{file.error_message}</Alert>
       ) : null}
 
-      {!canProcess ? (
+      {canProcessVideo ? (
         <Alert tone="info">
-          Video files are stored privately here. Transcript extraction arrives in
-          a later milestone.
+          Video metadata (duration, dimensions, codecs) is extracted with FFmpeg.
+          Transcript and clip tools arrive in later milestones.
         </Alert>
       ) : null}
 
-      {file.processing_status === "uploaded" && canProcess ? (
+      {file.processing_status === "uploaded" && canProcessDoc ? (
         <Alert tone="info">
           This document is uploaded but not processed yet. Extract text to review
           sections and page references.
@@ -119,7 +155,7 @@ export default async function DocumentViewerPage({
 
       {sectionsError ? <Alert tone="error">{sectionsError}</Alert> : null}
 
-      <DocumentSectionViewer sections={sections} />
+      {canProcessDoc ? <DocumentSectionViewer sections={sections} /> : null}
     </div>
   );
 }

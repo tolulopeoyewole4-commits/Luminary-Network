@@ -1,8 +1,13 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 
+import { ProcessingJobsList } from "@/components/jobs/ProcessingJobsList";
 import { Alert } from "@/components/ui/Alert";
 import { ProjectList } from "@/components/projects/ProjectList";
+import {
+  countActiveProcessingJobs,
+  listRecentProcessingJobs,
+} from "@/lib/jobs/queries";
 import { getOwnProfile } from "@/lib/profiles";
 import { countOwnProjects, listOwnProjects } from "@/lib/projects/queries";
 import { createClient } from "@/lib/supabase/server";
@@ -21,10 +26,13 @@ export default async function DashboardPage() {
   const greetingName =
     profile?.display_name || profile?.full_name || user?.email || "there";
 
-  const [{ projects, error }, counts] = await Promise.all([
-    listOwnProjects(supabase, { limit: 5 }),
-    countOwnProjects(supabase),
-  ]);
+  const [{ projects, error }, counts, activeJobs, { jobs, error: jobsError }] =
+    await Promise.all([
+      listOwnProjects(supabase, { limit: 5 }),
+      countOwnProjects(supabase),
+      countActiveProcessingJobs(supabase),
+      listRecentProcessingJobs(supabase, { limit: 5 }),
+    ]);
 
   return (
     <div className="space-y-8">
@@ -61,14 +69,27 @@ export default async function DashboardPage() {
         </div>
         <div className="surface-card p-5">
           <p className="text-sm text-muted">Processing jobs</p>
-          <p className="mt-2 font-display text-3xl font-semibold">0</p>
+          <p className="mt-2 font-display text-3xl font-semibold">{activeJobs}</p>
         </div>
       </section>
 
       <section className="space-y-4">
         <div className="flex items-center justify-between gap-3">
+          <h2 className="font-display text-2xl font-semibold">
+            Current processing jobs
+          </h2>
+        </div>
+        {jobsError ? <Alert tone="error">{jobsError}</Alert> : null}
+        <ProcessingJobsList jobs={jobs} />
+      </section>
+
+      <section className="space-y-4">
+        <div className="flex items-center justify-between gap-3">
           <h2 className="font-display text-2xl font-semibold">Recent projects</h2>
-          <Link href="/projects" className="text-sm font-semibold text-accent hover:underline">
+          <Link
+            href="/projects"
+            className="text-sm font-semibold text-accent hover:underline"
+          >
             View all
           </Link>
         </div>

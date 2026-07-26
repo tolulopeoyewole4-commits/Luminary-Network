@@ -2,6 +2,17 @@
 
 All notable changes to Luminary AI are documented here.
 
+## [0.7.0] — Milestone 7
+
+### Added
+
+- `video_metadata` processing job type and `source_files.media_metadata`.
+- FastAPI `/api/v1/videos/metadata` endpoint using ffprobe.
+- Video process/retry actions with queued → processing → completed/failed states.
+- Processing jobs panels on dashboard and project overview.
+- Auto-queue metadata extraction after MP4/MOV upload.
+- FFmpeg-backed API tests.
+
 ## [0.6.0] — Milestone 6
 
 ### Added

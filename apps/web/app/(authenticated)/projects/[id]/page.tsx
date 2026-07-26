@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 
 import { ContentList } from "@/components/content/ContentList";
 import { CourseList } from "@/components/courses/CourseList";
+import { ProcessingJobsList } from "@/components/jobs/ProcessingJobsList";
 import { ProjectDangerZone } from "@/components/projects/ProjectDangerZone";
 import { ProjectStatusBadge } from "@/components/projects/ProjectStatusBadge";
 import { ProjectTypeBadge } from "@/components/projects/ProjectTypeBadge";
@@ -12,6 +13,7 @@ import { SourceFileList } from "@/components/uploads/SourceFileList";
 import { SourceUploadForm } from "@/components/uploads/SourceUploadForm";
 import { listProjectGeneratedContent } from "@/lib/content/queries";
 import { listProjectCourses } from "@/lib/courses/queries";
+import { listProjectProcessingJobs } from "@/lib/jobs/queries";
 import { getOwnProject } from "@/lib/projects/queries";
 import { createClient } from "@/lib/supabase/server";
 import { listProjectSourceFiles } from "@/lib/uploads/queries";
@@ -48,11 +50,17 @@ export default async function ProjectOverviewPage({ params }: ProjectPageProps) 
     { files, error: filesError },
     { courses, error: coursesError },
     { items: contentItems, error: contentError },
+    { jobs, error: jobsError },
   ] = await Promise.all([
     listProjectSourceFiles(supabase, project.id),
     listProjectCourses(supabase, project.id),
     listProjectGeneratedContent(supabase, project.id),
+    listProjectProcessingJobs(supabase, project.id, { limit: 10 }),
   ]);
+
+  const activeJobs = jobs.filter(
+    (job) => job.status === "queued" || job.status === "processing",
+  ).length;
 
   const created = new Intl.DateTimeFormat("en", {
     dateStyle: "medium",
@@ -103,12 +111,13 @@ export default async function ProjectOverviewPage({ params }: ProjectPageProps) 
           </p>
         </div>
         <div className="surface-card p-5">
-          <p className="text-sm text-muted">Created</p>
-          <p className="mt-2 text-sm font-medium">{created}</p>
+          <p className="text-sm text-muted">Active jobs</p>
+          <p className="mt-2 font-display text-2xl font-semibold">{activeJobs}</p>
         </div>
         <div className="surface-card p-5">
-          <p className="text-sm text-muted">Last updated</p>
+          <p className="text-sm text-muted">Updated</p>
           <p className="mt-2 text-sm font-medium">{updated}</p>
+          <p className="mt-1 text-xs text-muted">Created {created}</p>
         </div>
       </section>
 
@@ -119,6 +128,14 @@ export default async function ProjectOverviewPage({ params }: ProjectPageProps) 
           This project is archived. Restore it before uploading new source files.
         </Alert>
       ) : null}
+
+      <section className="space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="font-display text-2xl font-semibold">Processing jobs</h2>
+        </div>
+        {jobsError ? <Alert tone="error">{jobsError}</Alert> : null}
+        <ProcessingJobsList jobs={jobs} />
+      </section>
 
       <section className="space-y-4">
         <div className="flex items-center justify-between gap-3">

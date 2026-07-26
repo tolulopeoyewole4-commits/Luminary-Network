@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import { Alert } from "@/components/ui/Alert";
+import { processVideoAction } from "@/lib/jobs/actions";
 import {
   completeSourceUploadAction,
   failSourceUploadAction,
@@ -12,6 +13,7 @@ import {
 import {
   DEFAULT_MAX_DOCUMENT_UPLOAD_MB,
   DEFAULT_MAX_VIDEO_UPLOAD_MB,
+  VIDEO_FILE_TYPES,
 } from "@/lib/uploads/constants";
 import { formatBytes } from "@/lib/uploads/limits";
 import { uploadSourceFileWithProgress } from "@/lib/uploads/upload-client";
@@ -121,9 +123,26 @@ export function SourceUploadForm({
     }
 
     setPhase("done");
-    setSuccess(`Uploaded ${validation.safeOriginalFilename} securely.`);
-    setFile(null);
     setProgress(100);
+    setFile(null);
+
+    const isVideo = (VIDEO_FILE_TYPES as readonly string[]).includes(
+      validation.fileType,
+    );
+
+    if (isVideo) {
+      setSuccess(
+        `Uploaded ${validation.safeOriginalFilename}. Video metadata processing has been queued.`,
+      );
+      router.refresh();
+      // Do not block the upload UI on long metadata work.
+      void processVideoAction(prepared.sourceFileId).finally(() => {
+        router.refresh();
+      });
+      return;
+    }
+
+    setSuccess(`Uploaded ${validation.safeOriginalFilename} securely.`);
     router.refresh();
   }
 
