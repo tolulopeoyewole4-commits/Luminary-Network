@@ -49,13 +49,15 @@ Browser
 4. Server verifies the object exists and marks the row `uploaded`.
 5. Downloads go through `createSignedUrl` (short expiry); public URLs are never used.
 
-## Document processing (Milestone 4)
+## Document processing (Milestone 4 + 16)
 
-1. Authenticated Next.js server action downloads the private object with the user session.
-2. Bytes are posted to FastAPI `/api/v1/documents/extract` using `INTERNAL_API_TOKEN`.
-3. FastAPI extracts text (PyMuPDF / python-docx / plain text), detects headings, and returns sections with page ranges.
-4. Next.js replaces `document_sections` for that file and updates `processing_jobs` + `source_files.processing_status`.
-5. The document viewer lets creators review section text and source page references.
+1. A `document_extract` processing job is inserted as `queued`; the source file moves to `processing`.
+2. With `ASYNC_DOCUMENT_EXTRACT=true` (default), the server action returns immediately and continues via Next.js `after()`.
+3. The continuation downloads the private object and posts bytes to FastAPI `/api/v1/documents/extract` using `INTERNAL_API_TOKEN`.
+4. FastAPI extracts text (PyMuPDF / python-docx / plain text), detects headings, and returns sections with page ranges.
+5. Next.js replaces `document_sections` for that file and marks the job completed / file `ready`.
+6. Jobs list and source-file/file pages auto-refresh while queued/processing; failed jobs retry with the same job id.
+7. Set `ASYNC_DOCUMENT_EXTRACT=false` to force synchronous extraction (useful for debugging).
 
 ## Course generation (Milestone 5)
 

@@ -112,9 +112,9 @@ pnpm health:api
 
 ## Current milestone
 
-**Milestone 15 — Async clip export**
+**Milestone 16 — Async document extract**
 
-FFmpeg clip export is enqueued and continues after the server-action response (`ASYNC_CLIP_EXPORT=true` by default), with live refresh on jobs/exported-clips lists. Video metadata async remains from Milestone 14.
+Document extraction is enqueued and continues after the server-action response (`ASYNC_DOCUMENT_EXTRACT=true` by default), with live refresh on jobs/file lists. Video metadata and clip export async remain from Milestones 14–15.
 
 - Release steps: [`docs/release-checklist.md`](docs/release-checklist.md)
 - Host setup: [`docs/deployment.md`](docs/deployment.md)

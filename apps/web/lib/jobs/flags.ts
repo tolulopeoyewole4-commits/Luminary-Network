@@ -14,3 +14,8 @@ export function isAsyncVideoJobsEnabled(): boolean {
 export function isAsyncClipExportEnabled(): boolean {
   return envFlagEnabled("ASYNC_CLIP_EXPORT", true);
 }
+
+/** When true (default), document extraction continues after the server-action response. */
+export function isAsyncDocumentExtractEnabled(): boolean {
+  return envFlagEnabled("ASYNC_DOCUMENT_EXTRACT", true);
+}

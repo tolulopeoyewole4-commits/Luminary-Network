@@ -1,9 +1,11 @@
 "use server";
 
+import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { isDocumentProcessableType } from "@/lib/documents/constants";
+import { isAsyncDocumentExtractEnabled } from "@/lib/jobs/flags";
 import { createClient } from "@/lib/supabase/server";
 import { SOURCE_STORAGE_BUCKET } from "@/lib/uploads/constants";
 import { getOwnSourceFile } from "@/lib/uploads/queries";
@@ -11,9 +13,11 @@ import { getOwnSourceFile } from "@/lib/uploads/queries";
 export type ProcessDocumentResult =
   | {
       ok: true;
-      sectionCount: number;
-      warnings: string[];
+      sectionCount?: number;
+      warnings?: string[];
       message: string;
+      jobId?: string;
+      queued?: boolean;
     }
   | {
       ok: false;
@@ -34,6 +38,16 @@ type ExtractApiResponse = {
     token_count: number;
   }>;
   detail?: string;
+};
+
+type EnqueuedDocumentExtract = {
+  sourceFileId: string;
+  projectId: string;
+  jobId: string;
+  userId: string;
+  storagePath: string;
+  originalFilename: string;
+  fileType: string;
 };
 
 function getApiBaseUrl(): string {
@@ -61,9 +75,19 @@ async function requireUser() {
   return { supabase, user };
 }
 
-export async function processDocumentAction(
+function revalidateDocumentPaths(projectId: string, sourceFileId: string) {
+  revalidatePath("/dashboard");
+  revalidatePath(`/projects/${projectId}`);
+  revalidatePath(`/projects/${projectId}/files/${sourceFileId}`);
+}
+
+async function enqueueDocumentExtract(
   sourceFileId: string,
-): Promise<ProcessDocumentResult> {
+  options?: { existingJobId?: string },
+): Promise<
+  | { ok: true; work: EnqueuedDocumentExtract }
+  | { ok: false; error: string }
+> {
   const { supabase, user } = await requireUser();
   const { file, error } = await getOwnSourceFile(supabase, sourceFileId);
 
@@ -83,23 +107,48 @@ export async function processDocumentAction(
     return { ok: false, error: "Finish uploading this file before processing." };
   }
 
-  const { data: job, error: jobError } = await supabase
-    .from("processing_jobs")
-    .insert({
-      user_id: user.id,
-      project_id: file.project_id,
-      source_file_id: file.id,
-      job_type: "document_extract",
-      status: "processing",
-      progress_percentage: 10,
-      started_at: new Date().toISOString(),
-    })
-    .select("id")
-    .single();
+  let jobId = options?.existingJobId;
 
-  if (jobError || !job) {
-    console.error("Failed to create processing job", jobError?.message);
-    return { ok: false, error: "Unable to start document processing." };
+  if (jobId) {
+    const { data: existing } = await supabase
+      .from("processing_jobs")
+      .select("id, user_id")
+      .eq("id", jobId)
+      .maybeSingle();
+
+    if (!existing || existing.user_id !== user.id) {
+      return { ok: false, error: "Processing job not found or inaccessible." };
+    }
+
+    await supabase
+      .from("processing_jobs")
+      .update({
+        status: "queued",
+        progress_percentage: 0,
+        error_message: null,
+        started_at: null,
+        completed_at: null,
+      })
+      .eq("id", jobId);
+  } else {
+    const { data: job, error: jobError } = await supabase
+      .from("processing_jobs")
+      .insert({
+        user_id: user.id,
+        project_id: file.project_id,
+        source_file_id: file.id,
+        job_type: "document_extract",
+        status: "queued",
+        progress_percentage: 0,
+      })
+      .select("id")
+      .single();
+
+    if (jobError || !job) {
+      console.error("Failed to create processing job", jobError?.message);
+      return { ok: false, error: "Unable to start document processing." };
+    }
+    jobId = job.id;
   }
 
   await supabase
@@ -110,10 +159,51 @@ export async function processDocumentAction(
     })
     .eq("id", file.id);
 
+  revalidateDocumentPaths(file.project_id, file.id);
+
+  return {
+    ok: true,
+    work: {
+      sourceFileId: file.id,
+      projectId: file.project_id,
+      jobId,
+      userId: user.id,
+      storagePath: file.internal_storage_path,
+      originalFilename: file.original_filename,
+      fileType: file.file_type,
+    },
+  };
+}
+
+async function executeDocumentExtract(
+  work: EnqueuedDocumentExtract,
+): Promise<ProcessDocumentResult> {
+  const supabase = await createClient();
+  const {
+    sourceFileId,
+    projectId,
+    jobId,
+    userId,
+    storagePath,
+    originalFilename,
+    fileType,
+  } = work;
+
+  await supabase
+    .from("processing_jobs")
+    .update({
+      status: "processing",
+      progress_percentage: 10,
+      started_at: new Date().toISOString(),
+      error_message: null,
+      completed_at: null,
+    })
+    .eq("id", jobId);
+
   try {
     const { data: blob, error: downloadError } = await supabase.storage
       .from(SOURCE_STORAGE_BUCKET)
-      .download(file.internal_storage_path);
+      .download(storagePath);
 
     if (downloadError || !blob) {
       throw new Error(
@@ -124,12 +214,12 @@ export async function processDocumentAction(
     await supabase
       .from("processing_jobs")
       .update({ progress_percentage: 40 })
-      .eq("id", job.id);
+      .eq("id", jobId);
 
     const form = new FormData();
-    form.append("file", blob, file.original_filename);
-    form.append("file_type", file.file_type);
-    form.append("original_filename", file.original_filename);
+    form.append("file", blob, originalFilename);
+    form.append("file_type", fileType);
+    form.append("original_filename", originalFilename);
 
     const response = await fetch(`${getApiBaseUrl()}/api/v1/documents/extract`, {
       method: "POST",
@@ -152,12 +242,12 @@ export async function processDocumentAction(
     await supabase
       .from("processing_jobs")
       .update({ progress_percentage: 75 })
-      .eq("id", job.id);
+      .eq("id", jobId);
 
     const { error: deleteError } = await supabase
       .from("document_sections")
       .delete()
-      .eq("source_file_id", file.id);
+      .eq("source_file_id", sourceFileId);
 
     if (deleteError) {
       throw new Error("Unable to replace previous extracted sections.");
@@ -165,8 +255,8 @@ export async function processDocumentAction(
 
     if (payload.sections.length > 0) {
       const rows = payload.sections.map((section) => ({
-        source_file_id: file.id,
-        user_id: user.id,
+        source_file_id: sourceFileId,
+        user_id: userId,
         section_title: section.section_title,
         section_number: section.section_number,
         page_start: section.page_start,
@@ -191,7 +281,7 @@ export async function processDocumentAction(
         page_count: payload.page_count,
         error_message: null,
       })
-      .eq("id", file.id);
+      .eq("id", sourceFileId);
 
     await supabase
       .from("processing_jobs")
@@ -201,13 +291,13 @@ export async function processDocumentAction(
         completed_at: new Date().toISOString(),
         error_message: null,
       })
-      .eq("id", job.id);
+      .eq("id", jobId);
 
-    revalidatePath(`/projects/${file.project_id}`);
-    revalidatePath(`/projects/${file.project_id}/files/${file.id}`);
+    revalidateDocumentPaths(projectId, sourceFileId);
 
     return {
       ok: true,
+      jobId,
       sectionCount: payload.section_count,
       warnings: payload.warnings ?? [],
       message: `Extracted ${payload.section_count} section${payload.section_count === 1 ? "" : "s"}.`,
@@ -222,7 +312,7 @@ export async function processDocumentAction(
         processing_status: "failed",
         error_message: message.slice(0, 500),
       })
-      .eq("id", file.id);
+      .eq("id", sourceFileId);
 
     await supabase
       .from("processing_jobs")
@@ -232,11 +322,33 @@ export async function processDocumentAction(
         completed_at: new Date().toISOString(),
         error_message: message.slice(0, 500),
       })
-      .eq("id", job.id);
+      .eq("id", jobId);
 
-    revalidatePath(`/projects/${file.project_id}`);
-    revalidatePath(`/projects/${file.project_id}/files/${file.id}`);
+    revalidateDocumentPaths(projectId, sourceFileId);
 
     return { ok: false, error: message };
   }
+}
+
+export async function processDocumentAction(
+  sourceFileId: string,
+  options?: { existingJobId?: string },
+): Promise<ProcessDocumentResult> {
+  const queued = await enqueueDocumentExtract(sourceFileId, options);
+  if (!queued.ok) return queued;
+
+  if (isAsyncDocumentExtractEnabled()) {
+    after(() => {
+      void executeDocumentExtract(queued.work);
+    });
+    return {
+      ok: true,
+      queued: true,
+      jobId: queued.work.jobId,
+      message:
+        "Document extraction queued. Watch progress on the jobs list; open the extract when the file shows ready.",
+    };
+  }
+
+  return executeDocumentExtract(queued.work);
 }

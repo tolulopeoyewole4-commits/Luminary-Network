@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 
 import { ProcessDocumentButton } from "@/components/documents/ProcessDocumentButton";
 import { ProcessVideoButton } from "@/components/jobs/ProcessVideoButton";
@@ -51,6 +51,19 @@ export function SourceFileList({ files, projectId }: SourceFileListProps) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const hasProcessing = files.some(
+    (file) => file.processing_status === "processing",
+  );
+
+  useEffect(() => {
+    if (!hasProcessing) return;
+    const timer = window.setInterval(() => {
+      router.refresh();
+    }, 4000);
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [hasProcessing, router]);
 
   if (files.length === 0) {
     return (

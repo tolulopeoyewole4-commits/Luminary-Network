@@ -2,6 +2,15 @@
 
 All notable changes to Luminary AI are documented here.
 
+## [0.16.0] — Milestone 16
+
+### Added
+
+- Async document extraction via Next.js `after()` (flag `ASYNC_DOCUMENT_EXTRACT`, default on).
+- Extract actions enqueue `document_extract` jobs and return immediately; file/pages refresh while processing.
+- Document-extract retry reuses the existing job id (no duplicate job rows).
+- Flag unit coverage for async document extract.
+
 ## [0.15.0] — Milestone 15
 
 ### Added

@@ -329,25 +329,16 @@ export async function retryProcessingJobAction(
       return { ok: false, error: "This job has no linked source file." };
     }
 
-    await supabase
-      .from("processing_jobs")
-      .update({
-        status: "queued",
-        progress_percentage: 0,
-        error_message: null,
-        started_at: null,
-        completed_at: null,
-      })
-      .eq("id", job.id);
-
-    const result = await processDocumentAction(job.source_file_id);
+    const result = await processDocumentAction(job.source_file_id, {
+      existingJobId: job.id,
+    });
     if (!result.ok) {
       return { ok: false, error: result.error };
     }
 
     return {
       ok: true,
-      jobId: job.id,
+      jobId: result.jobId ?? job.id,
       message: result.message,
     };
   }

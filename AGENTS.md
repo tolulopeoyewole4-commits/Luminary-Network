@@ -28,7 +28,7 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 
 ## Current milestone
 
-**Milestone 15 — Async clip export** (complete)
+**Milestone 16 — Async document extract** (complete)
 
 ## Completed milestones
 
@@ -48,6 +48,7 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 - **Milestone 13 — Release readiness**: merge-train/release checklist, SQL bundle for one-shot Supabase apply, local smoke script, docs refresh.
 - **Milestone 14 — Async video metadata**: enqueue + `next/server` `after()` execution (`ASYNC_VIDEO_JOBS`), jobs list auto-refresh while queued/processing.
 - **Milestone 15 — Async clip export**: enqueue FFmpeg exports via `after()` (`ASYNC_CLIP_EXPORT`), exported-clips list auto-refresh while processing.
+- **Milestone 16 — Async document extract**: enqueue `document_extract` via `after()` (`ASYNC_DOCUMENT_EXTRACT`), retry reuses job id, file list/page auto-refresh while processing.
 
 ## Known issues
 
@@ -56,8 +57,9 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 - Paid AI providers remain disabled until `AI_PROVIDER` is explicitly extended beyond `mock`.
 - Transcripts are mocked (no speech-to-text provider); replace `buildMockTranscriptSegments` when a real STT API is approved.
 - Clip detection is mocked (no scene/ASR ranking model); replace `buildMockClipCandidates` when a real detector is approved.
+- Mock video jobs (`video_transcribe` / `clip_detect` / `caption_generate`) still run synchronously inside server actions.
 
 ## Next tasks
 
 - Operator cutover using `docs/release-checklist.md` (merge PRs, apply SQL bundle, deploy API + web).
-- Optional: dedicated worker queue; paid AI providers; real STT/caption providers.
+- Optional: async mock video jobs; dedicated worker queue; paid AI providers; real STT/caption providers.

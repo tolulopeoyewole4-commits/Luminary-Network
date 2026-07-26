@@ -21,6 +21,7 @@ export function ProcessDocumentButton({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
 
   return (
     <div className="space-y-2">
@@ -30,6 +31,7 @@ export function ProcessDocumentButton({
         disabled={pending}
         onClick={() => {
           setError(null);
+          setMessage(null);
           startTransition(async () => {
             const result = await processDocumentAction(sourceFileId);
             if (!result.ok) {
@@ -37,16 +39,20 @@ export function ProcessDocumentButton({
               router.refresh();
               return;
             }
-            if (redirectToViewer) {
+            setMessage(result.message);
+            if (redirectToViewer && !result.queued) {
               router.push(`/projects/${projectId}/files/${sourceFileId}`);
             }
             router.refresh();
           });
         }}
       >
-        {pending ? "Extracting…" : label}
+        {pending ? "Queuing…" : label}
       </button>
       {error ? <p className="text-sm text-red-700">{error}</p> : null}
+      {message ? (
+        <p className="text-sm text-[var(--accent-strong)]">{message}</p>
+      ) : null}
     </div>
   );
 }

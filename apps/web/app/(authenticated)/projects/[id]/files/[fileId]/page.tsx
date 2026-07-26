@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 
 import { DocumentSectionViewer } from "@/components/documents/DocumentSectionViewer";
 import { ProcessDocumentButton } from "@/components/documents/ProcessDocumentButton";
+import { ProcessingAutoRefresh } from "@/components/jobs/ProcessingAutoRefresh";
 import { ProcessVideoButton } from "@/components/jobs/ProcessVideoButton";
 import { GenerateCaptionsButton } from "@/components/captions/GenerateCaptionsButton";
 import { DetectClipsButton } from "@/components/clips/DetectClipsButton";
@@ -90,8 +91,14 @@ export default async function DocumentViewerPage({
   ).length;
   const hasCaptions = Boolean(captionsResult.caption);
 
+  const isProcessing =
+    file.processing_status === "processing" ||
+    latestJob?.status === "queued" ||
+    latestJob?.status === "processing";
+
   return (
     <div className="space-y-8">
+      <ProcessingAutoRefresh active={isProcessing} />
       <section className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-sm font-medium uppercase tracking-[0.14em] text-accent">
