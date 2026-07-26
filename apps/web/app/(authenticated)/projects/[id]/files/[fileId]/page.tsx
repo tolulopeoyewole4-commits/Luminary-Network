@@ -5,8 +5,10 @@ import type { Metadata } from "next";
 import { DocumentSectionViewer } from "@/components/documents/DocumentSectionViewer";
 import { ProcessDocumentButton } from "@/components/documents/ProcessDocumentButton";
 import { ProcessVideoButton } from "@/components/jobs/ProcessVideoButton";
+import { DetectClipsButton } from "@/components/clips/DetectClipsButton";
 import { GenerateTranscriptButton } from "@/components/transcripts/GenerateTranscriptButton";
 import { Alert } from "@/components/ui/Alert";
+import { listClipCandidatesForSourceFile } from "@/lib/clips/queries";
 import { isDocumentProcessableType } from "@/lib/documents/constants";
 import {
   getLatestDocumentJob,
@@ -59,12 +61,17 @@ export default async function DocumentViewerPage({
     notFound();
   }
 
-  const [{ sections, error: sectionsError }, latestJob, transcriptResult] =
-    await Promise.all([
-      listDocumentSections(supabase, file.id),
-      getLatestDocumentJob(supabase, file.id),
-      getTranscriptForSourceFile(supabase, file.id),
-    ]);
+  const [
+    { sections, error: sectionsError },
+    latestJob,
+    transcriptResult,
+    clipsResult,
+  ] = await Promise.all([
+    listDocumentSections(supabase, file.id),
+    getLatestDocumentJob(supabase, file.id),
+    getTranscriptForSourceFile(supabase, file.id),
+    listClipCandidatesForSourceFile(supabase, file.id),
+  ]);
 
   const canProcessDoc = isDocumentProcessableType(file.file_type);
   const canProcessVideo = (VIDEO_FILE_TYPES as readonly string[]).includes(
@@ -73,6 +80,10 @@ export default async function DocumentViewerPage({
   const duration = formatDuration(file.video_duration_seconds);
   const meta = file.media_metadata ?? {};
   const hasTranscript = Boolean(transcriptResult.transcript);
+  const clipCount = clipsResult.clips.length;
+  const approvedClips = clipsResult.clips.filter(
+    (clip) => clip.status === "approved",
+  ).length;
 
   return (
     <div className="space-y-8">
@@ -111,6 +122,12 @@ export default async function DocumentViewerPage({
             {hasTranscript ? (
               <span className="rounded-lg bg-white/80 px-2.5 py-1 font-semibold text-muted ring-1 ring-[var(--border)]">
                 Transcript ready
+              </span>
+            ) : null}
+            {clipCount > 0 ? (
+              <span className="rounded-lg bg-white/80 px-2.5 py-1 font-semibold text-muted ring-1 ring-[var(--border)]">
+                {clipCount} clip candidates
+                {approvedClips ? ` · ${approvedClips} approved` : ""}
               </span>
             ) : null}
           </div>
@@ -159,6 +176,19 @@ export default async function DocumentViewerPage({
                     : "Generate mock transcript"
                 }
               />
+              <Link
+                href={`/projects/${projectId}/files/${file.id}/clips`}
+                className="btn-secondary"
+              >
+                {clipCount > 0 ? "Review clips" : "Clips"}
+              </Link>
+              <DetectClipsButton
+                sourceFileId={file.id}
+                projectId={projectId}
+                label={
+                  clipCount > 0 ? "Re-detect clips" : "Detect clip candidates"
+                }
+              />
             </>
           ) : null}
         </div>
@@ -170,8 +200,8 @@ export default async function DocumentViewerPage({
 
       {canProcessVideo ? (
         <Alert tone="info">
-          Video metadata uses FFmpeg. Generate a mock transcript to edit
-          timestamped segments and jump to moments in the private video preview.
+          Generate a mock transcript, then detect clip candidates to approve
+          short-form windows. FFmpeg export lands in the next milestone.
         </Alert>
       ) : null}
 

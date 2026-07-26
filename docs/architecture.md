@@ -88,6 +88,16 @@ Browser
 5. UI supports search, speaker/text edits (persisted), and click-to-seek by timestamp.
 6. Failed transcription jobs can be retried from the jobs UI (reuses the job row).
 
+## Clip candidate review (Milestone 9)
+
+1. Creators start a `clip_detect` job on a video source.
+2. Mock detector prefers transcript windows; otherwise uses evenly spaced duration slices.
+3. Candidates are stored in `clip_candidates` (`suggested` / `approved` / `rejected` / `exported`).
+4. Re-detection replaces suggested and rejected rows; approved/exported rows are kept.
+5. Review UI supports preview seek, edit title/reason/start/end, and approve/reject.
+6. Failed `clip_detect` jobs can be retried from the jobs UI.
+7. FFmpeg export of approved clips is Milestone 10.
+
 ## Storage
 
 - Private Supabase Storage bucket: `source-files`.

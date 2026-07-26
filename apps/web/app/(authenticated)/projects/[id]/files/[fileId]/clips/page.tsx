@@ -3,35 +3,35 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
 import { DetectClipsButton } from "@/components/clips/DetectClipsButton";
-import { GenerateTranscriptButton } from "@/components/transcripts/GenerateTranscriptButton";
-import { TranscriptViewer } from "@/components/transcripts/TranscriptViewer";
+import { ClipCandidatesReview } from "@/components/clips/ClipCandidatesReview";
 import { Alert } from "@/components/ui/Alert";
+import { listClipCandidatesForSourceFile } from "@/lib/clips/queries";
 import { createClient } from "@/lib/supabase/server";
 import { getTranscriptForSourceFile } from "@/lib/transcripts/queries";
 import {
+  SIGNED_URL_EXPIRY_SECONDS,
   SOURCE_FILE_TYPE_LABELS,
   SOURCE_STORAGE_BUCKET,
   VIDEO_FILE_TYPES,
-  SIGNED_URL_EXPIRY_SECONDS,
 } from "@/lib/uploads/constants";
 import { getOwnSourceFile } from "@/lib/uploads/queries";
 
-type TranscriptPageProps = {
+type ClipsPageProps = {
   params: Promise<{ id: string; fileId: string }>;
 };
 
 export async function generateMetadata({
   params,
-}: TranscriptPageProps): Promise<Metadata> {
+}: ClipsPageProps): Promise<Metadata> {
   const { fileId } = await params;
   const supabase = await createClient();
   const { file } = await getOwnSourceFile(supabase, fileId);
   return {
-    title: file ? `Transcript · ${file.original_filename}` : "Transcript",
+    title: file ? `Clips · ${file.original_filename}` : "Clip candidates",
   };
 }
 
-export default async function TranscriptPage({ params }: TranscriptPageProps) {
+export default async function ClipsPage({ params }: ClipsPageProps) {
   const { id: projectId, fileId } = await params;
   const supabase = await createClient();
   const { file, error } = await getOwnSourceFile(supabase, fileId);
@@ -45,7 +45,7 @@ export default async function TranscriptPage({ params }: TranscriptPageProps) {
   if (!isVideo) {
     return (
       <Alert tone="info">
-        Transcripts are available for MP4/MOV sources.{" "}
+        Clip candidates are available for MP4/MOV sources.{" "}
         <Link href={`/projects/${projectId}/files/${fileId}`} className="underline">
           Back to file
         </Link>
@@ -53,10 +53,10 @@ export default async function TranscriptPage({ params }: TranscriptPageProps) {
     );
   }
 
-  const { transcript, error: transcriptError } = await getTranscriptForSourceFile(
-    supabase,
-    file.id,
-  );
+  const [{ clips, error: clipsError }, { transcript }] = await Promise.all([
+    listClipCandidatesForSourceFile(supabase, file.id),
+    getTranscriptForSourceFile(supabase, file.id),
+  ]);
 
   let signedVideoUrl: string | null = null;
   if (file.processing_status !== "uploading") {
@@ -69,19 +69,22 @@ export default async function TranscriptPage({ params }: TranscriptPageProps) {
     }
   }
 
+  const approvedCount = clips.filter((clip) => clip.status === "approved").length;
+
   return (
     <div className="space-y-8">
       <section className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-sm font-medium uppercase tracking-[0.14em] text-accent">
-            Transcript editor
+            Clip candidate review
           </p>
           <h1 className="mt-2 font-display text-4xl font-semibold tracking-tight">
             {file.original_filename}
           </h1>
           <p className="mt-2 text-sm text-muted">
-            {SOURCE_FILE_TYPE_LABELS[file.file_type]} · Mock transcription for MVP
-            (no external speech API configured)
+            {SOURCE_FILE_TYPE_LABELS[file.file_type]} · Mock detection for MVP
+            {transcript ? " · grounded in transcript segments" : " · duration-based fallback"}
+            {approvedCount ? ` · ${approvedCount} approved` : ""}
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
@@ -92,45 +95,40 @@ export default async function TranscriptPage({ params }: TranscriptPageProps) {
             Back to file
           </Link>
           <Link
-            href={`/projects/${projectId}/files/${fileId}/clips`}
+            href={`/projects/${projectId}/files/${fileId}/transcript`}
             className="btn-secondary"
           >
-            Review clips
+            Transcript
           </Link>
-          <GenerateTranscriptButton
+          <DetectClipsButton
             sourceFileId={file.id}
             projectId={projectId}
-            redirectToViewer={false}
+            redirectToReview={false}
             label={
-              transcript ? "Regenerate mock transcript" : "Generate mock transcript"
+              clips.length > 0
+                ? "Re-detect mock clips"
+                : "Detect mock clip candidates"
             }
           />
-          {transcript ? (
-            <DetectClipsButton
-              sourceFileId={file.id}
-              projectId={projectId}
-              label="Detect clip candidates"
-            />
-          ) : null}
         </div>
       </section>
 
-      {transcriptError ? <Alert tone="error">{transcriptError}</Alert> : null}
-
       {!transcript ? (
         <Alert tone="info">
-          No transcript yet. Generate a mocked, timestamped transcript to review,
-          edit, search, and jump by time.
+          No transcript yet. Detection still works from duration, but results are
+          stronger after you generate a mock transcript.
         </Alert>
-      ) : (
-        <TranscriptViewer
-          transcript={transcript}
-          projectId={projectId}
-          sourceFileId={file.id}
-          signedVideoUrl={signedVideoUrl}
-          durationSeconds={file.video_duration_seconds}
-        />
-      )}
+      ) : null}
+
+      {clipsError ? <Alert tone="error">{clipsError}</Alert> : null}
+
+      <ClipCandidatesReview
+        clips={clips}
+        projectId={projectId}
+        sourceFileId={file.id}
+        signedVideoUrl={signedVideoUrl}
+        durationSeconds={file.video_duration_seconds}
+      />
     </div>
   );
 }

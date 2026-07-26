@@ -2,6 +2,17 @@
 
 All notable changes to Luminary AI are documented here.
 
+## [0.9.0] — Milestone 9
+
+### Added
+
+- `clip_candidates` migration with `clip_candidate_status` and owner-scoped RLS.
+- Mock `clip_detect` processing jobs grounded in transcript segments when available.
+- Clip review UI with signed video preview, filter, edit start/end/title/reason, approve/reject.
+- Entry points from file page, project file list, and transcript page.
+- Retry support for failed `clip_detect` jobs.
+- Mock clip unit tests and SQL contract tests.
+
 ## [0.8.0] — Milestone 8
 
 ### Added

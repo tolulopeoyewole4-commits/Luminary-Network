@@ -233,6 +233,29 @@ export type TranscriptSegment = {
   updated_at: string;
 };
 
+export type ClipCandidateStatus =
+  | "suggested"
+  | "approved"
+  | "rejected"
+  | "exported";
+
+export type ClipCandidate = {
+  id: string;
+  user_id: string;
+  project_id: string;
+  source_file_id: string;
+  transcript_id: string | null;
+  title: string;
+  reason: string;
+  start_time: number;
+  end_time: number;
+  score: number | null;
+  status: ClipCandidateStatus;
+  rank: number;
+  created_at: string;
+  updated_at: string;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -527,6 +550,36 @@ export type Database = {
         };
         Relationships: [];
       };
+      clip_candidates: {
+        Row: ClipCandidate;
+        Insert: {
+          id?: string;
+          user_id: string;
+          project_id: string;
+          source_file_id: string;
+          transcript_id?: string | null;
+          title?: string;
+          reason?: string;
+          start_time: number;
+          end_time: number;
+          score?: number | null;
+          status?: ClipCandidateStatus;
+          rank?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          title?: string;
+          reason?: string;
+          start_time?: number;
+          end_time?: number;
+          score?: number | null;
+          status?: ClipCandidateStatus;
+          rank?: number;
+          transcript_id?: string | null;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -542,6 +595,7 @@ export type Database = {
       generated_content_type: GeneratedContentType;
       generation_status: GenerationStatus;
       transcript_status: TranscriptStatus;
+      clip_candidate_status: ClipCandidateStatus;
     };
     CompositeTypes: Record<string, never>;
   };

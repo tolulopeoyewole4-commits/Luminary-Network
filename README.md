@@ -113,9 +113,9 @@ pnpm dev:api
 
 ## Current milestone
 
-**Milestone 8 — Transcript Viewer**
+**Milestone 9 — Clip Candidate Review**
 
-Video sources can generate a mock timestamped transcript (no speech API). Creators search, edit speaker/text, and jump to moments via a private signed video preview. Segments are RLS-scoped per owner.
+Video sources can run mock `clip_detect` jobs to suggest short-form windows (from transcript segments when available). Creators preview, edit start/end, and approve or reject candidates. FFmpeg export is Milestone 10.
 
 ```bash
 # apps/web/.env.local and apps/api/.env
@@ -124,7 +124,7 @@ API_URL=http://localhost:8000
 AI_PROVIDER=mock
 ```
 
-Apply SQL through `0008_transcripts.sql` and `0008_transcripts_rls.sql` after earlier migrations.
+Apply SQL through `0009_clip_candidates.sql` and `0009_clip_candidates_rls.sql` after earlier migrations.
 
 ---
 
