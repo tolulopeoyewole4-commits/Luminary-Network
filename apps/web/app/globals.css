@@ -1,0 +1,88 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #f4f7fb;
+  --background-deep: #e7eef6;
+  --foreground: #142033;
+  --muted: #5b6b7f;
+  --card: rgba(255, 255, 255, 0.78);
+  --border: rgba(20, 32, 51, 0.1);
+  --accent: #0f6e6a;
+  --accent-strong: #0b5754;
+  --accent-soft: #d7efed;
+  --highlight: #c9a227;
+  --danger: #b42318;
+  --success: #0f6e6a;
+  --shadow: 0 18px 50px rgba(20, 32, 51, 0.08);
+  --ring: rgba(15, 110, 106, 0.35);
+}
+
+body {
+  color: var(--foreground);
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(201, 162, 39, 0.16), transparent 55%),
+    radial-gradient(900px 500px at 90% 0%, rgba(15, 110, 106, 0.14), transparent 50%),
+    linear-gradient(180deg, var(--background) 0%, var(--background-deep) 100%);
+  font-family: var(--font-manrope), sans-serif;
+  min-height: 100vh;
+}
+
+h1,
+h2,
+h3,
+.font-display {
+  font-family: var(--font-fraunces), serif;
+}
+
+::selection {
+  background: rgba(15, 110, 106, 0.2);
+}
+
+@layer components {
+  .surface-card {
+    @apply rounded-2xl border bg-[var(--card)] shadow-[var(--shadow)] backdrop-blur-sm;
+    border-color: var(--border);
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition;
+    background: var(--accent);
+  }
+
+  .btn-primary:hover {
+    background: var(--accent-strong);
+  }
+
+  .btn-primary:disabled {
+    @apply cursor-not-allowed opacity-60;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center rounded-xl border bg-white/70 px-4 py-2.5 text-sm font-semibold transition hover:bg-white;
+    border-color: var(--border);
+    color: var(--foreground);
+  }
+
+  .field-input {
+    @apply w-full rounded-xl border bg-white/80 px-3.5 py-2.5 text-sm outline-none transition;
+    border-color: var(--border);
+    color: var(--foreground);
+  }
+
+  .field-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--ring);
+  }
+
+  .field-label {
+    @apply mb-1.5 block text-sm font-medium;
+    color: var(--foreground);
+  }
+
+  .field-error {
+    @apply mt-1.5 text-sm;
+    color: var(--danger);
+  }
+}
