@@ -28,7 +28,7 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 
 ## Current milestone
 
-**Milestone 9 — Clip Candidate Review** (complete; mock detection only)
+**Milestone 10 — FFmpeg Clip Export** (complete)
 
 ## Completed milestones
 
@@ -42,16 +42,17 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 - **Milestone 7 — Video Processing Jobs**: video_metadata jobs, ffprobe extraction, progress UI, retry failed jobs, auto-queue after video upload.
 - **Milestone 8 — Transcript Viewer**: `transcripts` / `transcript_segments` + RLS, mock `video_transcribe` jobs, editable segments, search, jump-to-time with signed video preview.
 - **Milestone 9 — Clip Candidate Review**: `clip_candidates` + RLS, mock `clip_detect` jobs, approve/reject/edit windows with signed preview.
+- **Milestone 10 — FFmpeg Clip Export**: `exported_clips` + RLS, FastAPI `/api/v1/videos/export-clip`, private storage paths, signed downloads, retry failed `video_export` jobs.
 
 ## Known issues
 
 - End-to-end flows require Supabase credentials, applied SQL, and a running FastAPI service with FFmpeg/ffprobe.
-- Large video metadata extraction currently runs in a server action (UI stays usable via async client continuation); a dedicated worker queue can replace this later.
+- Large video metadata/export currently runs in a server action (UI stays usable via async client continuation); a dedicated worker queue can replace this later.
 - Paid AI providers remain disabled until `AI_PROVIDER` is explicitly extended beyond `mock`.
 - Transcripts are mocked (no speech-to-text provider); replace `buildMockTranscriptSegments` when a real STT API is approved.
 - Clip detection is mocked (no scene/ASR ranking model); replace `buildMockClipCandidates` when a real detector is approved.
 
 ## Next tasks
 
-- Milestone 10: FFmpeg clip export.
 - Milestone 11: captions.
+- Milestone 12: deployment.

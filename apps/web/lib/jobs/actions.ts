@@ -338,6 +338,36 @@ export async function retryProcessingJobAction(
     };
   }
 
+  if (job.job_type === "video_export") {
+    const { data: exported } = await supabase
+      .from("exported_clips")
+      .select("clip_candidate_id")
+      .eq("processing_job_id", job.id)
+      .maybeSingle();
+
+    if (!exported?.clip_candidate_id) {
+      return {
+        ok: false,
+        error: "Unable to find the clip candidate linked to this export job.",
+      };
+    }
+
+    const { exportClipCandidateAction } = await import(
+      "@/lib/clips/export-actions"
+    );
+    const result = await exportClipCandidateAction(exported.clip_candidate_id, {
+      existingJobId: job.id,
+    });
+    if (!result.ok) {
+      return { ok: false, error: result.error };
+    }
+    return {
+      ok: true,
+      jobId: result.jobId ?? job.id,
+      message: result.message,
+    };
+  }
+
   return {
     ok: false,
     error: `Retry is not implemented for job type "${job.job_type}" yet.`,

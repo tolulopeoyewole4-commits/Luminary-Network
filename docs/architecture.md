@@ -96,7 +96,15 @@ Browser
 4. Re-detection replaces suggested and rejected rows; approved/exported rows are kept.
 5. Review UI supports preview seek, edit title/reason/start/end, and approve/reject.
 6. Failed `clip_detect` jobs can be retried from the jobs UI.
-7. FFmpeg export of approved clips is Milestone 10.
+
+## FFmpeg clip export (Milestone 10)
+
+1. Creators approve a candidate, then start a `video_export` job.
+2. Next.js downloads the private source and posts it to FastAPI `/api/v1/videos/export-clip` with start/end.
+3. FastAPI cuts the window with FFmpeg (H.264/AAC, faststart) and returns MP4 bytes.
+4. Next.js uploads the result to private storage at `{user_id}/{project_id}/exports/{uuid}.mp4`.
+5. `exported_clips` stores metadata; the candidate status becomes `exported`.
+6. Downloads use short-lived signed URLs; failed export jobs can be retried.
 
 ## Storage
 

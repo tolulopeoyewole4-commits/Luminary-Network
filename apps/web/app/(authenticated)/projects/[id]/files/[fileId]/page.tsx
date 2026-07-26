@@ -200,8 +200,8 @@ export default async function DocumentViewerPage({
 
       {canProcessVideo ? (
         <Alert tone="info">
-          Generate a mock transcript, then detect clip candidates to approve
-          short-form windows. FFmpeg export lands in the next milestone.
+          Generate a mock transcript, detect clip candidates, approve windows,
+          then export with FFmpeg to private storage for secure download.
         </Alert>
       ) : null}
 

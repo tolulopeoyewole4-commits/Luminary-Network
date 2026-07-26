@@ -256,6 +256,28 @@ export type ClipCandidate = {
   updated_at: string;
 };
 
+export type ExportedClipStatus = "processing" | "ready" | "failed";
+
+export type ExportedClip = {
+  id: string;
+  user_id: string;
+  project_id: string;
+  source_file_id: string;
+  clip_candidate_id: string;
+  processing_job_id: string | null;
+  title: string;
+  start_time: number;
+  end_time: number;
+  duration_seconds: number | null;
+  file_size: number | null;
+  mime_type: string;
+  internal_storage_path: string;
+  status: ExportedClipStatus;
+  error_message: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -580,6 +602,41 @@ export type Database = {
         };
         Relationships: [];
       };
+      exported_clips: {
+        Row: ExportedClip;
+        Insert: {
+          id?: string;
+          user_id: string;
+          project_id: string;
+          source_file_id: string;
+          clip_candidate_id: string;
+          processing_job_id?: string | null;
+          title?: string;
+          start_time: number;
+          end_time: number;
+          duration_seconds?: number | null;
+          file_size?: number | null;
+          mime_type?: string;
+          internal_storage_path: string;
+          status?: ExportedClipStatus;
+          error_message?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          title?: string;
+          start_time?: number;
+          end_time?: number;
+          duration_seconds?: number | null;
+          file_size?: number | null;
+          mime_type?: string;
+          internal_storage_path?: string;
+          status?: ExportedClipStatus;
+          error_message?: string | null;
+          processing_job_id?: string | null;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -596,6 +653,7 @@ export type Database = {
       generation_status: GenerationStatus;
       transcript_status: TranscriptStatus;
       clip_candidate_status: ClipCandidateStatus;
+      exported_clip_status: ExportedClipStatus;
     };
     CompositeTypes: Record<string, never>;
   };

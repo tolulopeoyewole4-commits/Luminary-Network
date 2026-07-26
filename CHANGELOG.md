@@ -2,6 +2,17 @@
 
 All notable changes to Luminary AI are documented here.
 
+## [0.10.0] — Milestone 10
+
+### Added
+
+- `exported_clips` migration with owner-scoped RLS and unique candidate link.
+- FastAPI `/api/v1/videos/export-clip` endpoint (FFmpeg re-encode, internal-token protected).
+- `video_export` jobs that download private sources, cut clips, and upload to `{user}/{project}/exports/`.
+- Export one / export-all-approved actions with signed download URLs.
+- Exported clips list on the clip review page; retry support for failed exports.
+- FFmpeg export tests and SQL contract tests.
+
 ## [0.9.0] — Milestone 9
 
 ### Added

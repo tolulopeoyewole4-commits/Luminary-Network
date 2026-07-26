@@ -2,9 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
-import { DetectClipsButton } from "@/components/clips/DetectClipsButton";
 import { ClipCandidatesReview } from "@/components/clips/ClipCandidatesReview";
+import { DetectClipsButton } from "@/components/clips/DetectClipsButton";
+import { ExportClipButton } from "@/components/clips/ExportClipButton";
+import { ExportedClipsList } from "@/components/clips/ExportedClipsList";
 import { Alert } from "@/components/ui/Alert";
+import { listExportedClipsForSourceFile } from "@/lib/clips/export-queries";
 import { listClipCandidatesForSourceFile } from "@/lib/clips/queries";
 import { createClient } from "@/lib/supabase/server";
 import { getTranscriptForSourceFile } from "@/lib/transcripts/queries";
@@ -53,9 +56,14 @@ export default async function ClipsPage({ params }: ClipsPageProps) {
     );
   }
 
-  const [{ clips, error: clipsError }, { transcript }] = await Promise.all([
+  const [
+    { clips, error: clipsError },
+    { transcript },
+    { exports, error: exportsError },
+  ] = await Promise.all([
     listClipCandidatesForSourceFile(supabase, file.id),
     getTranscriptForSourceFile(supabase, file.id),
+    listExportedClipsForSourceFile(supabase, file.id),
   ]);
 
   let signedVideoUrl: string | null = null;
@@ -70,21 +78,23 @@ export default async function ClipsPage({ params }: ClipsPageProps) {
   }
 
   const approvedCount = clips.filter((clip) => clip.status === "approved").length;
+  const exportedCount = exports.filter((item) => item.status === "ready").length;
 
   return (
     <div className="space-y-8">
       <section className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-sm font-medium uppercase tracking-[0.14em] text-accent">
-            Clip candidate review
+            Clip review and export
           </p>
           <h1 className="mt-2 font-display text-4xl font-semibold tracking-tight">
             {file.original_filename}
           </h1>
           <p className="mt-2 text-sm text-muted">
-            {SOURCE_FILE_TYPE_LABELS[file.file_type]} · Mock detection for MVP
+            {SOURCE_FILE_TYPE_LABELS[file.file_type]} · Mock detection + FFmpeg export
             {transcript ? " · grounded in transcript segments" : " · duration-based fallback"}
             {approvedCount ? ` · ${approvedCount} approved` : ""}
+            {exportedCount ? ` · ${exportedCount} exported` : ""}
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
@@ -110,6 +120,13 @@ export default async function ClipsPage({ params }: ClipsPageProps) {
                 : "Detect mock clip candidates"
             }
           />
+          {approvedCount > 0 ? (
+            <ExportClipButton
+              mode="approved"
+              sourceFileId={file.id}
+              label={`Export ${approvedCount} approved`}
+            />
+          ) : null}
         </div>
       </section>
 
@@ -121,6 +138,9 @@ export default async function ClipsPage({ params }: ClipsPageProps) {
       ) : null}
 
       {clipsError ? <Alert tone="error">{clipsError}</Alert> : null}
+      {exportsError ? <Alert tone="error">{exportsError}</Alert> : null}
+
+      <ExportedClipsList exports={exports} />
 
       <ClipCandidatesReview
         clips={clips}
@@ -128,6 +148,7 @@ export default async function ClipsPage({ params }: ClipsPageProps) {
         sourceFileId={file.id}
         signedVideoUrl={signedVideoUrl}
         durationSeconds={file.video_duration_seconds}
+        approvedCount={approvedCount}
       />
     </div>
   );

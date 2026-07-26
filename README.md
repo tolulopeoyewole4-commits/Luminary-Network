@@ -113,9 +113,9 @@ pnpm dev:api
 
 ## Current milestone
 
-**Milestone 9 — Clip Candidate Review**
+**Milestone 10 — FFmpeg Clip Export**
 
-Video sources can run mock `clip_detect` jobs to suggest short-form windows (from transcript segments when available). Creators preview, edit start/end, and approve or reject candidates. FFmpeg export is Milestone 10.
+Approved clip candidates export through FastAPI + FFmpeg into private Supabase Storage (`…/exports/{uuid}.mp4`). Creators download via short-lived signed URLs. `ffmpeg`/`ffprobe` required on the API host.
 
 ```bash
 # apps/web/.env.local and apps/api/.env
@@ -124,7 +124,7 @@ API_URL=http://localhost:8000
 AI_PROVIDER=mock
 ```
 
-Apply SQL through `0009_clip_candidates.sql` and `0009_clip_candidates_rls.sql` after earlier migrations.
+Apply SQL through `0010_exported_clips.sql` and `0010_exported_clips_rls.sql` after earlier migrations.
 
 ---
 

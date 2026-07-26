@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState, useTransition } from "react";
 
+import { ExportClipButton } from "@/components/clips/ExportClipButton";
 import { Alert } from "@/components/ui/Alert";
 import {
   setClipCandidateStatusAction,
@@ -16,6 +17,7 @@ type ClipCandidatesReviewProps = {
   sourceFileId: string;
   signedVideoUrl: string | null;
   durationSeconds: number | null;
+  approvedCount?: number;
 };
 
 type Draft = {
@@ -38,6 +40,7 @@ export function ClipCandidatesReview({
   sourceFileId,
   signedVideoUrl,
   durationSeconds,
+  approvedCount = 0,
 }: ClipCandidatesReviewProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [filter, setFilter] = useState<"all" | ClipCandidateStatus>("all");
@@ -186,6 +189,7 @@ export function ClipCandidatesReview({
                 ["suggested", "Suggested"],
                 ["approved", "Approved"],
                 ["rejected", "Rejected"],
+                ["exported", "Exported"],
               ] as const
             ).map(([value, label]) => (
               <button
@@ -236,11 +240,24 @@ export function ClipCandidatesReview({
       </div>
 
       <section className="space-y-3">
-        <h2 className="font-display text-2xl font-semibold">Review candidates</h2>
-        <p className="text-sm text-muted">
-          Approve clips to queue them for FFmpeg export in the next milestone.
-          Re-running detection replaces suggested and rejected items only.
-        </p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="font-display text-2xl font-semibold">
+              Review candidates
+            </h2>
+            <p className="mt-1 text-sm text-muted">
+              Approve clips, then export with FFmpeg to private storage. Re-running
+              detection replaces suggested and rejected items only.
+            </p>
+          </div>
+          {approvedCount > 0 ? (
+            <ExportClipButton
+              mode="approved"
+              sourceFileId={sourceFileId}
+              label={`Export ${approvedCount} approved`}
+            />
+          ) : null}
+        </div>
         {filtered.map((clip) => {
           const draft = drafts[clip.id] ?? {
             title: clip.title,
@@ -363,21 +380,32 @@ export function ClipCandidatesReview({
                 >
                   {busy ? "Saving…" : "Save edits"}
                 </button>
-                {clip.status !== "approved" ? (
+                {clip.status !== "approved" && clip.status !== "exported" ? (
                   <button
                     type="button"
                     className="btn-primary"
-                    disabled={locked || busy}
+                    disabled={busy}
                     onClick={() => setStatus(clip.id, "approved")}
                   >
                     Approve
                   </button>
                 ) : null}
+                {clip.status === "approved" || clip.status === "exported" ? (
+                  <ExportClipButton
+                    mode="one"
+                    clipCandidateId={clip.id}
+                    label={
+                      clip.status === "exported"
+                        ? "Re-export with FFmpeg"
+                        : "Export with FFmpeg"
+                    }
+                  />
+                ) : null}
                 {clip.status !== "rejected" ? (
                   <button
                     type="button"
                     className="inline-flex items-center justify-center rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-800 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
-                    disabled={locked || busy}
+                    disabled={busy}
                     onClick={() => setStatus(clip.id, "rejected")}
                   >
                     Reject
@@ -387,7 +415,7 @@ export function ClipCandidatesReview({
                   <button
                     type="button"
                     className="btn-secondary"
-                    disabled={locked || busy}
+                    disabled={busy}
                     onClick={() => setStatus(clip.id, "suggested")}
                   >
                     Mark suggested
