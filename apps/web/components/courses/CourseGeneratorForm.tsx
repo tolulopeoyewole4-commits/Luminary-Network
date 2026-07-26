@@ -51,6 +51,19 @@ export function CourseGeneratorForm({
       {state.message && !state.ok ? (
         <Alert tone="error">{state.message}</Alert>
       ) : null}
+      {state.message && state.ok ? (
+        <Alert tone="success">
+          {state.message}{" "}
+          {state.queued ? (
+            <Link
+              href={`/projects/${projectId}`}
+              className="font-semibold underline"
+            >
+              Back to project jobs
+            </Link>
+          ) : null}
+        </Alert>
+      ) : null}
 
       <div className="surface-card space-y-4 px-6 py-6">
         <div>
@@ -210,7 +223,7 @@ export function CourseGeneratorForm({
 
       <div className="flex flex-wrap gap-3">
         <button type="submit" className="btn-primary" disabled={pending}>
-          {pending ? "Generating outline…" : "Generate course outline"}
+          {pending ? "Queuing…" : "Generate course outline"}
         </button>
         <Link href={`/projects/${projectId}`} className="btn-secondary">
           Cancel

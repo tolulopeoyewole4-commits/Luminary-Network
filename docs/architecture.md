@@ -59,19 +59,24 @@ Browser
 6. Jobs list and source-file/file pages auto-refresh while queued/processing; failed jobs retry with the same job id.
 7. Set `ASYNC_DOCUMENT_EXTRACT=false` to force synchronous extraction (useful for debugging).
 
-## Course generation (Milestone 5)
+## Course generation (Milestone 5 + 18)
 
 1. Creator selects a processed document and one or more sections.
-2. Server action loads only those owned sections and calls `getAIProvider()`.
-3. Mock provider builds a structured outline from section text (no external claims).
-4. Outline is validated, saved to `courses` / `course_modules` / `course_lessons`, and opened for editing.
+2. A `course_generate` job is inserted as `queued` with the form inputs stored in `processing_jobs.payload`.
+3. With `ASYNC_AI_GENERATION=true` (default), the server action returns immediately and continues via Next.js `after()`.
+4. The continuation loads owned sections and calls `getAIProvider()` (mock in MVP).
+5. Outline is validated, saved to `courses` / `course_modules` / `course_lessons`; job payload records `resultCourseId`.
+6. Failed jobs can be retried from the jobs UI using the stored payload.
+7. Set `ASYNC_AI_GENERATION=false` to force synchronous generation (still redirects to the new course).
 
-## Social content generation (Milestone 6)
+## Social content generation (Milestone 6 + 18)
 
 1. Creator selects processed sections and platform controls.
-2. Server action calls `AIProvider.generateSocialContent()` (mock in MVP).
-3. Outputs are Zod-validated, include source references, and are stored in `generated_content`.
-4. Creators can edit, duplicate, and archive items in the project content library.
+2. A `social_generate` job is inserted as `queued` with inputs in `processing_jobs.payload`.
+3. With `ASYNC_AI_GENERATION=true` (default), work continues via Next.js `after()`.
+4. Continuation calls `AIProvider.generateSocialContent()` (mock in MVP).
+5. Outputs are Zod-validated, include source references, and are stored in `generated_content`; payload records `resultContentIds`.
+6. Creators can edit, duplicate, and archive items; failed jobs retry from the jobs UI.
 
 ## Video processing jobs (Milestone 7 + 14)
 

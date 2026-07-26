@@ -28,7 +28,7 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 
 ## Current milestone
 
-**Milestone 17 — Async mock video jobs** (complete)
+**Milestone 18 — Async AI generation** (complete)
 
 ## Completed milestones
 
@@ -50,6 +50,7 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 - **Milestone 15 — Async clip export**: enqueue FFmpeg exports via `after()` (`ASYNC_CLIP_EXPORT`), exported-clips list auto-refresh while processing.
 - **Milestone 16 — Async document extract**: enqueue `document_extract` via `after()` (`ASYNC_DOCUMENT_EXTRACT`), retry reuses job id, file list/page auto-refresh while processing.
 - **Milestone 17 — Async mock video jobs**: enqueue `video_transcribe` / `clip_detect` / `caption_generate` via `after()` (`ASYNC_MOCK_VIDEO_JOBS`).
+- **Milestone 18 — Async AI generation**: enqueue `course_generate` / `social_generate` via `after()` (`ASYNC_AI_GENERATION`), store retry payload on jobs.
 
 ## Known issues
 
@@ -58,9 +59,9 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 - Paid AI providers remain disabled until `AI_PROVIDER` is explicitly extended beyond `mock`.
 - Transcripts are mocked (no speech-to-text provider); replace `buildMockTranscriptSegments` when a real STT API is approved.
 - Clip detection is mocked (no scene/ASR ranking model); replace `buildMockClipCandidates` when a real detector is approved.
-- Course and social generation still run synchronously (no `processing_jobs` rows).
+- Apply migration `0012_ai_generation_jobs.sql` (or rebundle) before using async course/social jobs in an existing Supabase project.
 
 ## Next tasks
 
 - Operator cutover using `docs/release-checklist.md` (merge PRs, apply SQL bundle, deploy API + web).
-- Optional: dedicated worker queue; paid AI providers; real STT/caption providers; async course/social generation.
+- Optional: dedicated worker queue; paid AI providers; real STT/caption providers.

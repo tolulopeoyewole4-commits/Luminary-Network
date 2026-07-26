@@ -1,5 +1,6 @@
 "use server";
 
+import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -10,17 +11,42 @@ import {
   validateCourseGeneratorInput,
   type CourseGeneratorFieldErrors,
 } from "@/lib/courses/validation";
+import { isAsyncAiGenerationEnabled } from "@/lib/jobs/flags";
 import { createClient } from "@/lib/supabase/server";
 
 export type GenerateCourseState = {
   ok: boolean;
   message?: string;
   fieldErrors?: CourseGeneratorFieldErrors;
+  queued?: boolean;
+  jobId?: string;
+  courseId?: string;
 };
 
 export type SaveCourseState = {
   ok: boolean;
   message?: string;
+};
+
+export type CourseGenerateInput = {
+  sourceFileId: string;
+  sectionIds: string[];
+  targetAudience: string;
+  courseObjective: string;
+  durationLabel: string;
+  moduleCount: number;
+  difficultyLevel: "beginner" | "intermediate" | "advanced";
+};
+
+type CourseJobPayload = CourseGenerateInput & {
+  resultCourseId?: string;
+};
+
+type EnqueuedCourseGenerate = {
+  projectId: string;
+  jobId: string;
+  userId: string;
+  input: CourseGenerateInput;
 };
 
 async function requireUser() {
@@ -32,6 +58,15 @@ async function requireUser() {
   return { supabase, user };
 }
 
+function isRedirectError(error: unknown): boolean {
+  return Boolean(
+    error &&
+      typeof error === "object" &&
+      "digest" in error &&
+      String((error as { digest?: string }).digest).startsWith("NEXT_REDIRECT"),
+  );
+}
+
 function asStringArray(value: FormDataEntryValue | null): string[] {
   if (typeof value !== "string") return [];
   return value
@@ -40,32 +75,44 @@ function asStringArray(value: FormDataEntryValue | null): string[] {
     .filter(Boolean);
 }
 
-export async function generateCourseAction(
-  projectId: string,
-  _prev: GenerateCourseState,
-  formData: FormData,
-): Promise<GenerateCourseState> {
-  const sourceFileId = String(formData.get("sourceFileId") ?? "");
-  const sectionIds = formData
-    .getAll("sectionIds")
-    .map(String)
-    .filter(Boolean);
-  const targetAudience = String(formData.get("targetAudience") ?? "");
-  const courseObjective = String(formData.get("courseObjective") ?? "");
-  const durationLabel = String(formData.get("durationLabel") ?? "");
-  const moduleCount = Number(formData.get("moduleCount") ?? "3");
-  const difficultyLevel = String(formData.get("difficultyLevel") ?? "beginner");
+function parseCoursePayload(raw: unknown): CourseJobPayload | null {
+  if (!raw || typeof raw !== "object") return null;
+  const value = raw as Record<string, unknown>;
+  if (
+    typeof value.sourceFileId !== "string" ||
+    !Array.isArray(value.sectionIds) ||
+    typeof value.targetAudience !== "string" ||
+    typeof value.courseObjective !== "string" ||
+    typeof value.durationLabel !== "string" ||
+    typeof value.moduleCount !== "number" ||
+    (value.difficultyLevel !== "beginner" &&
+      value.difficultyLevel !== "intermediate" &&
+      value.difficultyLevel !== "advanced")
+  ) {
+    return null;
+  }
+  return {
+    sourceFileId: value.sourceFileId,
+    sectionIds: value.sectionIds.map(String).filter(Boolean),
+    targetAudience: value.targetAudience,
+    courseObjective: value.courseObjective,
+    durationLabel: value.durationLabel,
+    moduleCount: value.moduleCount,
+    difficultyLevel: value.difficultyLevel,
+    resultCourseId:
+      typeof value.resultCourseId === "string" ? value.resultCourseId : undefined,
+  };
+}
 
-  const fieldErrors = validateCourseGeneratorInput({
-    sourceFileId,
-    sectionIds,
-    targetAudience,
-    courseObjective,
-    durationLabel,
-    moduleCount,
-    difficultyLevel,
-  });
-
+async function enqueueCourseGenerate(input: {
+  projectId: string;
+  form: CourseGenerateInput;
+  existingJobId?: string;
+}): Promise<
+  | { ok: true; work: EnqueuedCourseGenerate }
+  | { ok: false; message: string; fieldErrors?: CourseGeneratorFieldErrors }
+> {
+  const fieldErrors = validateCourseGeneratorInput(input.form);
   if (hasCourseGeneratorErrors(fieldErrors)) {
     return {
       ok: false,
@@ -79,7 +126,7 @@ export async function generateCourseAction(
   const { data: project } = await supabase
     .from("projects")
     .select("id")
-    .eq("id", projectId)
+    .eq("id", input.projectId)
     .maybeSingle();
 
   if (!project) {
@@ -89,12 +136,12 @@ export async function generateCourseAction(
   const { data: sourceFile } = await supabase
     .from("source_files")
     .select("id, project_id, processing_status")
-    .eq("id", sourceFileId)
+    .eq("id", input.form.sourceFileId)
     .maybeSingle();
 
   if (
     !sourceFile ||
-    sourceFile.project_id !== projectId ||
+    sourceFile.project_id !== input.projectId ||
     sourceFile.processing_status !== "ready"
   ) {
     return {
@@ -105,10 +152,9 @@ export async function generateCourseAction(
 
   const { data: sections, error: sectionsError } = await supabase
     .from("document_sections")
-    .select("*")
-    .eq("source_file_id", sourceFileId)
-    .in("id", sectionIds)
-    .order("section_number", { ascending: true });
+    .select("id")
+    .eq("source_file_id", input.form.sourceFileId)
+    .in("id", input.form.sectionIds);
 
   if (sectionsError || !sections || sections.length === 0) {
     return {
@@ -117,17 +163,106 @@ export async function generateCourseAction(
     };
   }
 
+  const payload: CourseJobPayload = { ...input.form };
+  let jobId = input.existingJobId;
+
+  if (jobId) {
+    const { data: existing } = await supabase
+      .from("processing_jobs")
+      .select("id, user_id")
+      .eq("id", jobId)
+      .maybeSingle();
+    if (!existing || existing.user_id !== user.id) {
+      return { ok: false, message: "Processing job not found or inaccessible." };
+    }
+    await supabase
+      .from("processing_jobs")
+      .update({
+        status: "queued",
+        progress_percentage: 0,
+        error_message: null,
+        started_at: null,
+        completed_at: null,
+        payload,
+      })
+      .eq("id", jobId);
+  } else {
+    const { data: job, error: jobError } = await supabase
+      .from("processing_jobs")
+      .insert({
+        user_id: user.id,
+        project_id: input.projectId,
+        source_file_id: input.form.sourceFileId,
+        job_type: "course_generate",
+        status: "queued",
+        progress_percentage: 0,
+        payload,
+      })
+      .select("id")
+      .single();
+
+    if (jobError || !job) {
+      console.error("Failed to create course job", jobError?.message);
+      return { ok: false, message: "Unable to start course generation." };
+    }
+    jobId = job.id;
+  }
+
+  revalidatePath("/dashboard");
+  revalidatePath(`/projects/${input.projectId}`);
+
+  return {
+    ok: true,
+    work: {
+      projectId: input.projectId,
+      jobId,
+      userId: user.id,
+      input: input.form,
+    },
+  };
+}
+
+async function executeCourseGenerate(
+  work: EnqueuedCourseGenerate,
+): Promise<GenerateCourseState> {
+  const supabase = await createClient();
+  const { projectId, jobId, userId, input } = work;
+
+  await supabase
+    .from("processing_jobs")
+    .update({
+      status: "processing",
+      progress_percentage: 15,
+      started_at: new Date().toISOString(),
+      error_message: null,
+      completed_at: null,
+    })
+    .eq("id", jobId);
+
   try {
+    const { data: sections, error: sectionsError } = await supabase
+      .from("document_sections")
+      .select("*")
+      .eq("source_file_id", input.sourceFileId)
+      .in("id", input.sectionIds)
+      .order("section_number", { ascending: true });
+
+    if (sectionsError || !sections || sections.length === 0) {
+      throw new Error("Unable to load the selected source sections.");
+    }
+
+    await supabase
+      .from("processing_jobs")
+      .update({ progress_percentage: 40 })
+      .eq("id", jobId);
+
     const provider = getAIProvider();
     const outline = await provider.generateCourseOutline({
-      targetAudience: targetAudience.trim(),
-      courseObjective: courseObjective.trim(),
-      durationLabel: durationLabel.trim(),
-      moduleCount,
-      difficultyLevel: difficultyLevel as
-        | "beginner"
-        | "intermediate"
-        | "advanced",
+      targetAudience: input.targetAudience.trim(),
+      courseObjective: input.courseObjective.trim(),
+      durationLabel: input.durationLabel.trim(),
+      moduleCount: input.moduleCount,
+      difficultyLevel: input.difficultyLevel,
       sections: sections.map((section) => ({
         id: section.id,
         sectionTitle: section.section_title,
@@ -138,21 +273,23 @@ export async function generateCourseAction(
       })),
     });
 
+    await supabase
+      .from("processing_jobs")
+      .update({ progress_percentage: 70 })
+      .eq("id", jobId);
+
     const { data: course, error: courseError } = await supabase
       .from("courses")
       .insert({
-        user_id: user.id,
+        user_id: userId,
         project_id: projectId,
-        source_file_id: sourceFileId,
+        source_file_id: input.sourceFileId,
         title: outline.title,
         description: outline.description,
         target_audience: outline.targetAudience,
-        course_objective: courseObjective.trim(),
-        duration_label: durationLabel.trim(),
-        difficulty_level: difficultyLevel as
-          | "beginner"
-          | "intermediate"
-          | "advanced",
+        course_objective: input.courseObjective.trim(),
+        duration_label: input.durationLabel.trim(),
+        difficulty_level: input.difficultyLevel,
         learning_outcomes: outline.learningOutcomes,
         quiz_suggestions: outline.quizSuggestions,
         source_references: outline.sourceReferences,
@@ -163,14 +300,14 @@ export async function generateCourseAction(
 
     if (courseError || !course) {
       console.error("Failed to save course", courseError?.message);
-      return { ok: false, message: "Unable to save the generated course." };
+      throw new Error("Unable to save the generated course.");
     }
 
     for (const [moduleIndex, moduleOutline] of outline.modules.entries()) {
       const { data: moduleRow, error: moduleError } = await supabase
         .from("course_modules")
         .insert({
-          user_id: user.id,
+          user_id: userId,
           course_id: course.id,
           title: moduleOutline.title,
           description: moduleOutline.description,
@@ -185,7 +322,7 @@ export async function generateCourseAction(
       }
 
       const lessonRows = moduleOutline.lessons.map((lesson, lessonIndex) => ({
-        user_id: user.id,
+        user_id: userId,
         module_id: moduleRow.id,
         title: lesson.title,
         learning_objectives: lesson.learningObjectives,
@@ -203,27 +340,159 @@ export async function generateCourseAction(
       }
     }
 
-    revalidatePath(`/projects/${projectId}`);
-    redirect(`/projects/${projectId}/courses/${course.id}`);
-  } catch (error) {
-    if (
-      error &&
-      typeof error === "object" &&
-      "digest" in error &&
-      String((error as { digest?: string }).digest).startsWith("NEXT_REDIRECT")
-    ) {
-      throw error;
-    }
+    const completedPayload: CourseJobPayload = {
+      ...input,
+      resultCourseId: course.id,
+    };
 
-    console.error("Course generation failed", error);
+    await supabase
+      .from("processing_jobs")
+      .update({
+        status: "completed",
+        progress_percentage: 100,
+        completed_at: new Date().toISOString(),
+        error_message: null,
+        payload: completedPayload,
+      })
+      .eq("id", jobId);
+
+    revalidatePath("/dashboard");
+    revalidatePath(`/projects/${projectId}`);
+    revalidatePath(`/projects/${projectId}/courses/${course.id}`);
+
+    return {
+      ok: true,
+      jobId,
+      courseId: course.id,
+      message: "Course outline generated.",
+    };
+  } catch (error) {
+    if (isRedirectError(error)) throw error;
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Course generation failed. Please try again.";
+
+    await supabase
+      .from("processing_jobs")
+      .update({
+        status: "failed",
+        progress_percentage: 100,
+        completed_at: new Date().toISOString(),
+        error_message: message.slice(0, 500),
+      })
+      .eq("id", jobId);
+
+    revalidatePath(`/projects/${projectId}`);
+    return { ok: false, message };
+  }
+}
+
+export async function generateCourseAction(
+  projectId: string,
+  _prev: GenerateCourseState,
+  formData: FormData,
+): Promise<GenerateCourseState> {
+  const form: CourseGenerateInput = {
+    sourceFileId: String(formData.get("sourceFileId") ?? ""),
+    sectionIds: formData.getAll("sectionIds").map(String).filter(Boolean),
+    targetAudience: String(formData.get("targetAudience") ?? ""),
+    courseObjective: String(formData.get("courseObjective") ?? ""),
+    durationLabel: String(formData.get("durationLabel") ?? ""),
+    moduleCount: Number(formData.get("moduleCount") ?? "3"),
+    difficultyLevel: String(formData.get("difficultyLevel") ?? "beginner") as
+      | "beginner"
+      | "intermediate"
+      | "advanced",
+  };
+
+  const queued = await enqueueCourseGenerate({ projectId, form });
+  if (!queued.ok) {
     return {
       ok: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Course generation failed. Please try again.",
+      message: queued.message,
+      fieldErrors: queued.fieldErrors,
     };
   }
+
+  if (isAsyncAiGenerationEnabled()) {
+    after(() => {
+      void executeCourseGenerate(queued.work);
+    });
+    return {
+      ok: true,
+      queued: true,
+      jobId: queued.work.jobId,
+      message:
+        "Course generation queued. Watch the jobs list; open the new course from the project when ready.",
+    };
+  }
+
+  const result = await executeCourseGenerate(queued.work);
+  if (!result.ok || !result.courseId) {
+    return result;
+  }
+
+  redirect(`/projects/${projectId}/courses/${result.courseId}`);
+}
+
+export async function retryCourseGenerateAction(
+  jobId: string,
+): Promise<{ ok: true; message: string; jobId: string } | { ok: false; error: string }> {
+  const { supabase, user } = await requireUser();
+  const { data: job } = await supabase
+    .from("processing_jobs")
+    .select("*")
+    .eq("id", jobId)
+    .maybeSingle();
+
+  if (!job || job.user_id !== user.id || job.job_type !== "course_generate") {
+    return { ok: false, error: "Course generation job not found or inaccessible." };
+  }
+
+  const payload = parseCoursePayload(job.payload);
+  if (!payload) {
+    return { ok: false, error: "This job is missing generation inputs to retry." };
+  }
+
+  const queued = await enqueueCourseGenerate({
+    projectId: job.project_id,
+    form: {
+      sourceFileId: payload.sourceFileId,
+      sectionIds: payload.sectionIds,
+      targetAudience: payload.targetAudience,
+      courseObjective: payload.courseObjective,
+      durationLabel: payload.durationLabel,
+      moduleCount: payload.moduleCount,
+      difficultyLevel: payload.difficultyLevel,
+    },
+    existingJobId: job.id,
+  });
+
+  if (!queued.ok) {
+    return { ok: false, error: queued.message };
+  }
+
+  if (isAsyncAiGenerationEnabled()) {
+    after(() => {
+      void executeCourseGenerate(queued.work);
+    });
+    return {
+      ok: true,
+      jobId: queued.work.jobId,
+      message: "Course generation re-queued.",
+    };
+  }
+
+  const result = await executeCourseGenerate(queued.work);
+  if (!result.ok) {
+    return { ok: false, error: result.message || "Course generation failed." };
+  }
+  return {
+    ok: true,
+    jobId: result.jobId ?? queued.work.jobId,
+    message: result.message || "Course outline generated.",
+  };
 }
 
 export async function updateCourseAction(

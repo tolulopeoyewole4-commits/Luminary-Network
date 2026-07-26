@@ -60,6 +60,7 @@ Alternatively deploy from the monorepo root with the root `vercel.json` helpers;
 | `ASYNC_CLIP_EXPORT` | optional | default `true` (FFmpeg export via `after()`) |
 | `ASYNC_DOCUMENT_EXTRACT` | optional | default `true` (document extract via `after()`) |
 | `ASYNC_MOCK_VIDEO_JOBS` | optional | default `true` (transcribe/clips/captions via `after()`) |
+| `ASYNC_AI_GENERATION` | optional | default `true` (course/social generate via `after()`) |
 | `MAX_PROJECTS_PER_USER` | optional | default `10` |
 | `MAX_FILES_PER_PROJECT` | optional | default `25` |
 | `MAX_DOCUMENT_UPLOAD_MB` | optional | default `50` |

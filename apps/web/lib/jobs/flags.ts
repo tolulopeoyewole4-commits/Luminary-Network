@@ -27,3 +27,11 @@ export function isAsyncDocumentExtractEnabled(): boolean {
 export function isAsyncMockVideoJobsEnabled(): boolean {
   return envFlagEnabled("ASYNC_MOCK_VIDEO_JOBS", true);
 }
+
+/**
+ * When true (default), course/social AI generation continues after the
+ * server-action response.
+ */
+export function isAsyncAiGenerationEnabled(): boolean {
+  return envFlagEnabled("ASYNC_AI_GENERATION", true);
+}

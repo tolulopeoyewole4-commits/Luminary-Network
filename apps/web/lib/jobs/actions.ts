@@ -429,6 +429,32 @@ export async function retryProcessingJobAction(
     };
   }
 
+  if (job.job_type === "course_generate") {
+    const { retryCourseGenerateAction } = await import("@/lib/courses/actions");
+    const result = await retryCourseGenerateAction(job.id);
+    if (!result.ok) {
+      return { ok: false, error: result.error };
+    }
+    return {
+      ok: true,
+      jobId: result.jobId,
+      message: result.message,
+    };
+  }
+
+  if (job.job_type === "social_generate") {
+    const { retrySocialGenerateAction } = await import("@/lib/content/actions");
+    const result = await retrySocialGenerateAction(job.id);
+    if (!result.ok) {
+      return { ok: false, error: result.error };
+    }
+    return {
+      ok: true,
+      jobId: result.jobId,
+      message: result.message,
+    };
+  }
+
   return {
     ok: false,
     error: `Retry is not implemented for job type "${job.job_type}" yet.`,

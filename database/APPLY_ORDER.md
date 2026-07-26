@@ -33,6 +33,7 @@ pnpm sql:bundle
 20. `policies/0010_exported_clips_rls.sql`
 21. `migrations/0011_captions.sql`
 22. `policies/0011_captions_rls.sql`
+23. `migrations/0012_ai_generation_jobs.sql`
 
 Print the same list locally:
 

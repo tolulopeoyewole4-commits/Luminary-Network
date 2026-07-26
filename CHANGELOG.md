@@ -2,6 +2,16 @@
 
 All notable changes to Luminary AI are documented here.
 
+## [0.18.0] — Milestone 18
+
+### Added
+
+- Async course/social AI generation via Next.js `after()` (flag `ASYNC_AI_GENERATION`, default on).
+- New job types `course_generate` / `social_generate` with `processing_jobs.payload` for retryable inputs.
+- Migration `0012_ai_generation_jobs.sql` (enum values + payload column).
+- Generator forms show queued messaging; sync path still redirects on completion.
+- Flag unit coverage + SQL contract tests.
+
 ## [0.17.0] — Milestone 17
 
 ### Added

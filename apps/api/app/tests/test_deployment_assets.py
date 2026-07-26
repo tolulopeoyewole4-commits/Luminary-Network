@@ -15,4 +15,5 @@ def test_sql_apply_order_covers_latest_migrations() -> None:
     text = (ROOT / "database" / "APPLY_ORDER.md").read_text(encoding="utf-8")
     assert "0011_captions.sql" in text
     assert "0011_captions_rls.sql" in text
+    assert "0012_ai_generation_jobs.sql" in text
     assert "0003_source_files_storage.sql" in text

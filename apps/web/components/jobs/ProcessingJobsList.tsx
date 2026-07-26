@@ -23,6 +23,8 @@ const JOB_LABELS: Record<ProcessingJob["job_type"], string> = {
   clip_detect: "Clip detection",
   video_export: "Video export",
   caption_generate: "Caption generation",
+  course_generate: "Course generation",
+  social_generate: "Social content generation",
 };
 
 type ProcessingJobsListProps = {

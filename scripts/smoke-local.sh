@@ -11,9 +11,10 @@ pnpm gate
 echo "==> Bundling SQL"
 pnpm sql:bundle
 
-echo "==> Verifying SQL bundle mentions latest captions migration"
-grep -q "0011_captions.sql" database/dist/supabase_schema.sql
-grep -q "create table if not exists public.captions" database/dist/supabase_schema.sql
+echo "==> Verifying SQL bundle mentions latest AI generation jobs migration"
+grep -q "0012_ai_generation_jobs.sql" database/dist/supabase_schema.sql
+grep -q "course_generate" database/dist/supabase_schema.sql
+grep -q "add column if not exists payload jsonb" database/dist/supabase_schema.sql
 
 API_URL="${API_URL:-http://localhost:8000}"
 if curl -fsS "${API_URL%/}/health" >/dev/null 2>&1; then

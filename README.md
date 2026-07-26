@@ -112,9 +112,9 @@ pnpm health:api
 
 ## Current milestone
 
-**Milestone 17 — Async mock video jobs**
+**Milestone 18 — Async AI generation**
 
-Mock transcript, clip detection, and caption jobs enqueue and continue after the server-action response (`ASYNC_MOCK_VIDEO_JOBS=true` by default). Document extract, video metadata, and clip export async remain from Milestones 14–16.
+Course and social generation enqueue as processing jobs and continue after the server-action response (`ASYNC_AI_GENERATION=true` by default). All prior async job flags (video/document/mock) remain from Milestones 14–17.
 
 - Release steps: [`docs/release-checklist.md`](docs/release-checklist.md)
 - Host setup: [`docs/deployment.md`](docs/deployment.md)

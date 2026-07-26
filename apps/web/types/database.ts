@@ -86,7 +86,9 @@ export type ProcessingJobType =
   | "video_transcribe"
   | "clip_detect"
   | "video_export"
-  | "caption_generate";
+  | "caption_generate"
+  | "course_generate"
+  | "social_generate";
 
 export type ProcessingJobStatus =
   | "queued"
@@ -103,6 +105,7 @@ export type ProcessingJob = {
   status: ProcessingJobStatus;
   progress_percentage: number;
   error_message: string | null;
+  payload: Record<string, unknown> | null;
   started_at: string | null;
   completed_at: string | null;
   created_at: string;
@@ -427,6 +430,7 @@ export type Database = {
           status?: ProcessingJobStatus;
           progress_percentage?: number;
           error_message?: string | null;
+          payload?: Record<string, unknown> | null;
           started_at?: string | null;
           completed_at?: string | null;
           created_at?: string;
@@ -436,6 +440,7 @@ export type Database = {
           status?: ProcessingJobStatus;
           progress_percentage?: number;
           error_message?: string | null;
+          payload?: Record<string, unknown> | null;
           started_at?: string | null;
           completed_at?: string | null;
         };
