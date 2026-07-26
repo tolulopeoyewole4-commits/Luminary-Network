@@ -112,9 +112,9 @@ pnpm health:api
 
 ## Current milestone
 
-**Milestone 14 — Async video metadata jobs**
+**Milestone 15 — Async clip export**
 
-Video metadata processing is enqueued and continues after the server-action response (`ASYNC_VIDEO_JOBS=true` by default), with live job-list refresh. MVP cutover docs remain in Milestone 13.
+FFmpeg clip export is enqueued and continues after the server-action response (`ASYNC_CLIP_EXPORT=true` by default), with live refresh on jobs/exported-clips lists. Video metadata async remains from Milestone 14.
 
 - Release steps: [`docs/release-checklist.md`](docs/release-checklist.md)
 - Host setup: [`docs/deployment.md`](docs/deployment.md)

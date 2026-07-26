@@ -2,6 +2,15 @@
 
 All notable changes to Luminary AI are documented here.
 
+## [0.15.0] — Milestone 15
+
+### Added
+
+- Async FFmpeg clip export via Next.js `after()` (flag `ASYNC_CLIP_EXPORT`, default on).
+- Export actions enqueue `video_export` jobs and return immediately; downloads when ready.
+- Exported clips list auto-refreshes while status is `processing`.
+- Flag unit coverage for async clip export.
+
 ## [0.14.0] — Milestone 14
 
 ### Added

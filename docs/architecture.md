@@ -100,14 +100,16 @@ Browser
 5. Review UI supports preview seek, edit title/reason/start/end, and approve/reject.
 6. Failed `clip_detect` jobs can be retried from the jobs UI.
 
-## FFmpeg clip export (Milestone 10)
+## FFmpeg clip export (Milestone 10 + 15)
 
-1. Creators approve a candidate, then start a `video_export` job.
-2. Next.js downloads the private source and posts it to FastAPI `/api/v1/videos/export-clip` with start/end.
-3. FastAPI cuts the window with FFmpeg (H.264/AAC, faststart) and returns MP4 bytes.
-4. Next.js uploads the result to private storage at `{user_id}/{project_id}/exports/{uuid}.mp4`.
-5. `exported_clips` stores metadata; the candidate status becomes `exported`.
-6. Downloads use short-lived signed URLs; failed export jobs can be retried.
+1. Creators approve a candidate, then start a `video_export` job (`queued`).
+2. With `ASYNC_CLIP_EXPORT=true` (default), the server action returns immediately and continues via Next.js `after()`.
+3. The continuation downloads the private source and posts it to FastAPI `/api/v1/videos/export-clip` with start/end.
+4. FastAPI cuts the window with FFmpeg (H.264/AAC, faststart) and returns MP4 bytes.
+5. Next.js uploads the result to private storage at `{user_id}/{project_id}/exports/{uuid}.mp4`.
+6. `exported_clips` stores metadata; the candidate status becomes `exported` when ready.
+7. Downloads use short-lived signed URLs; the exports list auto-refreshes while processing; failed jobs can be retried.
+8. Set `ASYNC_CLIP_EXPORT=false` to force synchronous export (useful for debugging).
 
 ## Captions (Milestone 11)
 

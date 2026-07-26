@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState, useTransition } from "react";
 
 import { Alert } from "@/components/ui/Alert";
 import { createExportedClipSignedUrlAction } from "@/lib/clips/export-actions";
@@ -19,9 +20,21 @@ const STATUS_STYLES: Record<ExportedClip["status"], string> = {
 };
 
 export function ExportedClipsList({ exports }: ExportedClipsListProps) {
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const hasProcessing = exports.some((item) => item.status === "processing");
+
+  useEffect(() => {
+    if (!hasProcessing) return;
+    const timer = window.setInterval(() => {
+      router.refresh();
+    }, 4000);
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [hasProcessing, router]);
 
   if (exports.length === 0) {
     return null;

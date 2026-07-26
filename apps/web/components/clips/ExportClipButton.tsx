@@ -52,14 +52,14 @@ export function ExportClipButton(props: ExportClipButtonProps) {
               return;
             }
             setMessage(result.message);
-            if (result.signedUrl && props.mode === "one") {
+            if (result.signedUrl && !result.queued && props.mode === "one") {
               window.open(result.signedUrl, "_blank", "noopener,noreferrer");
             }
             router.refresh();
           });
         }}
       >
-        {pending ? "Exporting…" : label}
+        {pending ? "Queuing…" : label}
       </button>
       {error ? <p className="text-sm text-red-700">{error}</p> : null}
       {message ? <p className="text-sm text-[var(--accent-strong)]">{message}</p> : null}

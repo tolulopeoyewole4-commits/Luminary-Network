@@ -1,5 +1,16 @@
+function envFlagEnabled(name: string, defaultEnabled = true): boolean {
+  const raw = process.env[name];
+  if (raw == null || raw.trim() === "") return defaultEnabled;
+  const normalized = raw.trim().toLowerCase();
+  return normalized !== "0" && normalized !== "false" && normalized !== "off";
+}
+
 /** When true (default), video metadata continues after the server-action response. */
 export function isAsyncVideoJobsEnabled(): boolean {
-  const raw = (process.env.ASYNC_VIDEO_JOBS ?? "true").trim().toLowerCase();
-  return raw !== "0" && raw !== "false" && raw !== "off";
+  return envFlagEnabled("ASYNC_VIDEO_JOBS", true);
+}
+
+/** When true (default), FFmpeg clip export continues after the server-action response. */
+export function isAsyncClipExportEnabled(): boolean {
+  return envFlagEnabled("ASYNC_CLIP_EXPORT", true);
 }

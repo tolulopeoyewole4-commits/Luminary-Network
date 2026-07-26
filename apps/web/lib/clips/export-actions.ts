@@ -2,9 +2,11 @@
 
 import { randomUUID } from "node:crypto";
 
+import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { isAsyncClipExportEnabled } from "@/lib/jobs/flags";
 import { createClient } from "@/lib/supabase/server";
 import {
   SIGNED_URL_EXPIRY_SECONDS,
@@ -19,6 +21,7 @@ export type ExportClipResult =
       jobId?: string;
       exportedClipId?: string;
       signedUrl?: string;
+      queued?: boolean;
     }
   | { ok: false; error: string };
 
@@ -50,10 +53,26 @@ function revalidateExportPaths(projectId: string, sourceFileId: string) {
   revalidatePath("/dashboard");
 }
 
-export async function exportClipCandidateAction(
+type EnqueuedExport = {
+  clipCandidateId: string;
+  sourceFileId: string;
+  projectId: string;
+  jobId: string;
+  exportedClipId: string;
+  storagePath: string;
+  previousStoragePath: string | null;
+  title: string;
+  startTime: number;
+  endTime: number;
+  durationSeconds: number;
+  originalFilename: string;
+  sourceStoragePath: string;
+};
+
+async function enqueueClipExport(
   clipCandidateId: string,
   options?: { existingJobId?: string },
-): Promise<ExportClipResult> {
+): Promise<{ ok: true; work: EnqueuedExport } | { ok: false; error: string }> {
   const { supabase, user } = await requireUser();
 
   const { data: clip, error: clipError } = await supabase
@@ -97,10 +116,10 @@ export async function exportClipCandidateAction(
     await supabase
       .from("processing_jobs")
       .update({
-        status: "processing",
-        progress_percentage: 10,
+        status: "queued",
+        progress_percentage: 0,
         error_message: null,
-        started_at: new Date().toISOString(),
+        started_at: null,
         completed_at: null,
       })
       .eq("id", jobId);
@@ -112,9 +131,8 @@ export async function exportClipCandidateAction(
         project_id: clip.project_id,
         source_file_id: file.id,
         job_type: "video_export",
-        status: "processing",
-        progress_percentage: 10,
-        started_at: new Date().toISOString(),
+        status: "queued",
+        progress_percentage: 0,
       })
       .select("id")
       .single();
@@ -139,6 +157,7 @@ export async function exportClipCandidateAction(
     .maybeSingle();
 
   let exportedClipId = existingExport?.id;
+  const previousStoragePath = existingExport?.internal_storage_path ?? null;
 
   if (exportedClipId) {
     await supabase
@@ -189,10 +208,61 @@ export async function exportClipCandidateAction(
     exportedClipId = created.id;
   }
 
+  revalidateExportPaths(clip.project_id, file.id);
+
+  return {
+    ok: true,
+    work: {
+      clipCandidateId: clip.id,
+      sourceFileId: file.id,
+      projectId: clip.project_id,
+      jobId,
+      exportedClipId,
+      storagePath,
+      previousStoragePath,
+      title: clip.title,
+      startTime,
+      endTime,
+      durationSeconds,
+      originalFilename: file.original_filename,
+      sourceStoragePath: file.internal_storage_path,
+    },
+  };
+}
+
+async function executeClipExport(work: EnqueuedExport): Promise<ExportClipResult> {
+  const supabase = await createClient();
+  const {
+    jobId,
+    exportedClipId,
+    storagePath,
+    previousStoragePath,
+    title,
+    startTime,
+    endTime,
+    durationSeconds,
+    originalFilename,
+    sourceStoragePath,
+    projectId,
+    sourceFileId,
+    clipCandidateId,
+  } = work;
+
+  await supabase
+    .from("processing_jobs")
+    .update({
+      status: "processing",
+      progress_percentage: 10,
+      started_at: new Date().toISOString(),
+      error_message: null,
+      completed_at: null,
+    })
+    .eq("id", jobId);
+
   try {
     const { data: blob, error: downloadError } = await supabase.storage
       .from(SOURCE_STORAGE_BUCKET)
-      .download(file.internal_storage_path);
+      .download(sourceStoragePath);
 
     if (downloadError || !blob) {
       throw new Error(
@@ -206,10 +276,10 @@ export async function exportClipCandidateAction(
       .eq("id", jobId);
 
     const form = new FormData();
-    form.append("file", blob, file.original_filename);
+    form.append("file", blob, originalFilename);
     form.append("start_time", String(startTime));
     form.append("end_time", String(endTime));
-    form.append("original_filename", file.original_filename);
+    form.append("original_filename", originalFilename);
 
     const response = await fetch(`${getApiBaseUrl()}/api/v1/videos/export-clip`, {
       method: "POST",
@@ -239,10 +309,10 @@ export async function exportClipCandidateAction(
       .update({ progress_percentage: 75 })
       .eq("id", jobId);
 
-    if (existingExport?.internal_storage_path) {
+    if (previousStoragePath && previousStoragePath !== storagePath) {
       await supabase.storage
         .from(SOURCE_STORAGE_BUCKET)
-        .remove([existingExport.internal_storage_path]);
+        .remove([previousStoragePath]);
     }
 
     const { error: uploadError } = await supabase.storage
@@ -275,7 +345,7 @@ export async function exportClipCandidateAction(
     await supabase
       .from("clip_candidates")
       .update({ status: "exported" })
-      .eq("id", clip.id);
+      .eq("id", clipCandidateId);
 
     await supabase
       .from("processing_jobs")
@@ -291,14 +361,14 @@ export async function exportClipCandidateAction(
       .from(SOURCE_STORAGE_BUCKET)
       .createSignedUrl(storagePath, SIGNED_URL_EXPIRY_SECONDS);
 
-    revalidateExportPaths(clip.project_id, file.id);
+    revalidateExportPaths(projectId, sourceFileId);
 
     return {
       ok: true,
       jobId,
       exportedClipId,
       signedUrl: signed?.signedUrl,
-      message: `Exported “${clip.title}” (${durationSeconds.toFixed(1)}s).`,
+      message: `Exported “${title}” (${durationSeconds.toFixed(1)}s).`,
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Clip export failed.";
@@ -321,9 +391,33 @@ export async function exportClipCandidateAction(
       })
       .eq("id", jobId);
 
-    revalidateExportPaths(clip.project_id, file.id);
+    revalidateExportPaths(projectId, sourceFileId);
     return { ok: false, error: message };
   }
+}
+
+export async function exportClipCandidateAction(
+  clipCandidateId: string,
+  options?: { existingJobId?: string },
+): Promise<ExportClipResult> {
+  const queued = await enqueueClipExport(clipCandidateId, options);
+  if (!queued.ok) return queued;
+
+  if (isAsyncClipExportEnabled()) {
+    after(() => {
+      void executeClipExport(queued.work);
+    });
+    return {
+      ok: true,
+      queued: true,
+      jobId: queued.work.jobId,
+      exportedClipId: queued.work.exportedClipId,
+      message:
+        "Clip export queued. Watch progress on the jobs list; download when the export shows ready.",
+    };
+  }
+
+  return executeClipExport(queued.work);
 }
 
 export async function exportApprovedClipsAction(
@@ -343,6 +437,36 @@ export async function exportApprovedClipsAction(
 
   if (!clips?.length) {
     return { ok: false, error: "No approved clips to export." };
+  }
+
+  if (isAsyncClipExportEnabled()) {
+    let queued = 0;
+    const failures: string[] = [];
+
+    for (const clip of clips) {
+      const result = await exportClipCandidateAction(clip.id);
+      if (result.ok) {
+        queued += 1;
+      } else {
+        failures.push(`${clip.title}: ${result.error}`);
+      }
+    }
+
+    if (queued === 0) {
+      return {
+        ok: false,
+        error: failures[0] || "Unable to queue approved clips.",
+      };
+    }
+
+    return {
+      ok: true,
+      queued: true,
+      message:
+        failures.length === 0
+          ? `Queued ${queued} approved clip export${queued === 1 ? "" : "s"}.`
+          : `Queued ${queued} export(s); ${failures.length} failed to queue.`,
+    };
   }
 
   let success = 0;

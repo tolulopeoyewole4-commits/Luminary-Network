@@ -28,7 +28,7 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 
 ## Current milestone
 
-**Milestone 14 — Async video metadata jobs** (complete)
+**Milestone 15 — Async clip export** (complete)
 
 ## Completed milestones
 
@@ -47,11 +47,12 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 - **Milestone 12 — Deployment**: Vercel/Fly/Render guidance, SQL apply order, GitHub Actions CI, production CORS/`ALLOWED_ORIGINS`, hardened API Docker image, deploy smoke scripts.
 - **Milestone 13 — Release readiness**: merge-train/release checklist, SQL bundle for one-shot Supabase apply, local smoke script, docs refresh.
 - **Milestone 14 — Async video metadata**: enqueue + `next/server` `after()` execution (`ASYNC_VIDEO_JOBS`), jobs list auto-refresh while queued/processing.
+- **Milestone 15 — Async clip export**: enqueue FFmpeg exports via `after()` (`ASYNC_CLIP_EXPORT`), exported-clips list auto-refresh while processing.
 
 ## Known issues
 
 - End-to-end flows require Supabase credentials, applied SQL, and a running FastAPI service with FFmpeg/ffprobe.
-- Clip export and some other heavy jobs still run inside the initiating server action; a dedicated worker queue can absorb those next.
+- A dedicated worker queue can still replace `after()` for very large media workloads.
 - Paid AI providers remain disabled until `AI_PROVIDER` is explicitly extended beyond `mock`.
 - Transcripts are mocked (no speech-to-text provider); replace `buildMockTranscriptSegments` when a real STT API is approved.
 - Clip detection is mocked (no scene/ASR ranking model); replace `buildMockClipCandidates` when a real detector is approved.
@@ -59,4 +60,4 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 ## Next tasks
 
 - Operator cutover using `docs/release-checklist.md` (merge PRs, apply SQL bundle, deploy API + web).
-- Optional: extend async/`after()` (or a worker) to clip export; paid AI providers; real STT/caption providers.
+- Optional: dedicated worker queue; paid AI providers; real STT/caption providers.
