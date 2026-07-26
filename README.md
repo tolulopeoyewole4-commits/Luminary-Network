@@ -69,6 +69,8 @@ In the Supabase SQL editor, run in order:
 
 1. `database/migrations/0001_profiles.sql`
 2. `database/policies/0001_profiles_rls.sql`
+3. `database/migrations/0002_projects.sql`
+4. `database/policies/0002_projects_rls.sql`
 
 Enable email auth in Supabase Authentication settings. For local development you may disable email confirmation temporarily.
 
@@ -101,9 +103,9 @@ pnpm dev:api
 
 ## Current milestone
 
-**Milestone 1 — Authentication and Protected Dashboard**
+**Milestone 2 — Project Management**
 
-Completed foundations: registration, login, logout, password recovery, protected dashboard, profile creation via database trigger, RLS on `profiles`.
+Create, list, edit, archive, and delete projects with RLS ownership checks. Dashboard shows recent projects and counts.
 
 ---
 

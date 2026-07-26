@@ -12,6 +12,8 @@
 - Enabled on every user-owned table.
 - `profiles`: users may `SELECT`/`UPDATE` only where `id = auth.uid()`.
 - Profile inserts are performed by a security-definer trigger, not by clients.
+- `projects`: users may `SELECT`/`INSERT`/`UPDATE`/`DELETE` only where `user_id = auth.uid()`.
+- Project mutations always use the authenticated Supabase session (anon key + user JWT), never the service role from the browser.
 
 ## Secret management
 

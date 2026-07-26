@@ -28,20 +28,21 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 
 ## Current milestone
 
-**Milestone 1 — Authentication and Protected Dashboard** (complete; awaiting live Supabase credentials for E2E auth)
+**Milestone 2 — Project Management** (complete; requires Supabase migrations applied)
 
 ## Completed milestones
 
 - **Milestone 0 — Repository Audit**: greenfield repo; no prior application code.
 - **Milestone 1 — Authentication and Protected Dashboard**: monorepo scaffold, Supabase auth pages, protected dashboard/settings, profiles migration + RLS, FastAPI health endpoint, tests.
+- **Milestone 2 — Project Management**: projects table + RLS, create/list/overview/edit/archive/delete UI, dashboard project summary, validation tests.
 
 ## Known issues
 
 - End-to-end auth against a live Supabase project requires project credentials in `apps/web/.env.local`.
 - Email verification behaviour depends on Supabase Auth settings.
-- FastAPI is a health/stub service only in Milestone 1.
+- FastAPI is a health/stub service only; project CRUD is handled via Next.js server actions + Supabase RLS.
 
 ## Next tasks
 
-- Milestone 2: project management (create, list, edit, archive/delete).
 - Milestone 3: private file upload with signed URLs.
+- Milestone 4: PDF and document processing.

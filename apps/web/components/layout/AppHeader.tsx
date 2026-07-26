@@ -20,6 +20,12 @@ export function AppHeader({ displayName }: AppHeaderProps) {
             Dashboard
           </Link>
           <Link
+            href="/projects"
+            className="rounded-lg px-2 py-1.5 font-medium text-foreground/80 hover:bg-white"
+          >
+            Projects
+          </Link>
+          <Link
             href="/settings"
             className="rounded-lg px-2 py-1.5 font-medium text-foreground/80 hover:bg-white"
           >

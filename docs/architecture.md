@@ -32,6 +32,13 @@ Browser
 - Migrations live in `database/migrations/`.
 - RLS policies live in `database/policies/`.
 - Profile rows are created by a `security definer` trigger on `auth.users`.
+- Projects are owned by `user_id` and filtered exclusively by RLS.
+
+## Project management (Milestone 2)
+
+- Next.js server actions create/update/archive/delete projects.
+- Ownership is enforced by Supabase RLS (`auth.uid() = user_id`) and by querying only the authenticated session.
+- Dashboard and `/projects` pages list the current user's projects with empty and error states.
 
 ## Storage
 
