@@ -102,7 +102,7 @@ pnpm health:api
 | `pnpm dev:api` | Start FastAPI |
 | `pnpm test:api` | Backend tests |
 | `pnpm test` | All tests |
-| `pnpm ci` | Full local CI gate |
+| `pnpm gate` | Full local CI gate |
 | `pnpm sql:order` | Print SQL apply order |
 | `pnpm sql:bundle` | Build `database/dist/supabase_schema.sql` |
 | `pnpm health:api` | Smoke-check API `/health` |

@@ -18,6 +18,9 @@ __pycache__/
 .next/
 out/
 dist/
+!database/dist/
+database/dist/*
+!database/dist/supabase_schema.sql
 build/
 coverage/
 *.tsbuildinfo

@@ -132,6 +132,8 @@ GitHub Actions workflow [`.github/workflows/ci.yml`](../.github/workflows/ci.yml
 - Web: typecheck, lint, test, build
 - API: pytest (with FFmpeg installed on the runner)
 
+Locally, use `pnpm gate` (not `pnpm ci` — that name is reserved by pnpm).
+
 Push protection: never commit `.env` files (see `.gitignore`).
 
 ---

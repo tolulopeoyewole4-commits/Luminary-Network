@@ -63,7 +63,7 @@ Alternative: merge the tip branch `cursor/milestone-12-deployment-c4ad` (or this
 ## G. Local gate before promote
 
 ```bash
-pnpm ci
+pnpm gate
 pnpm sql:bundle
 # with API running:
 pnpm health:api

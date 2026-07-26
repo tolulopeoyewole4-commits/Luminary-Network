@@ -6,7 +6,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 echo "==> Running CI gate (typecheck, lint, tests, build)"
-pnpm ci
+pnpm gate
 
 echo "==> Bundling SQL"
 pnpm sql:bundle
