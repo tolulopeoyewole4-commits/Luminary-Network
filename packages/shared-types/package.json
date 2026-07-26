@@ -1,0 +1,6 @@
+{
+  "name": "@luminary/shared-types",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Shared TypeScript types placeholder for Luminary AI"
+}

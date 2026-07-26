@@ -1,0 +1,53 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+apps/api/.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Env and secrets
+.env
+.env.*
+!.env.example
+*.pem
+
+# Build outputs
+.next/
+out/
+dist/
+!database/dist/
+database/dist/*
+!database/dist/supabase_schema.sql
+build/
+coverage/
+*.tsbuildinfo
+
+# IDE / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Vercel
+.vercel
+
+# Testing
+apps/web/coverage/
+apps/api/.coverage
+
+# Local media scratch space (do not ignore app source under **/uploads/)
+tmp/
+/uploads/
+*.mp4
+!docs/**/*.mp4

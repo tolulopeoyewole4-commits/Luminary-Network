@@ -1,0 +1,66 @@
+services:
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:-dev-internal-token}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
+      MAX_EXTRACT_UPLOAD_MB: ${MAX_EXTRACT_UPLOAD_MB:-55}
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  api-dev:
+    profiles: ["dev"]
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:-dev-internal-token}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
+    volumes:
+      - ./apps/api/app:/app/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    user: root
+
+  # Dedicated job worker (polls Supabase with service role).
+  # Enable with: docker compose --profile worker up worker
+  # Pair with DEDICATED_JOB_WORKER=true on the web app.
+  worker:
+    profiles: ["worker"]
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    environment:
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
+      SOURCE_STORAGE_BUCKET: ${SOURCE_STORAGE_BUCKET:-source-files}
+      WORKER_POLL_SECONDS: ${WORKER_POLL_SECONDS:-2}
+      WORKER_JOB_TYPES: ${WORKER_JOB_TYPES:-document_extract,video_metadata,video_export}
+    command: ["python", "-m", "app.workers.run"]
+    restart: unless-stopped
+
+  # Optional local Postgres for non-Supabase development.
+  # MVP auth and data should use Supabase-hosted Postgres.
+  postgres:
+    image: postgres:16-alpine
+    profiles: ["local-db"]
+    environment:
+      POSTGRES_USER: luminary
+      POSTGRES_PASSWORD: luminary
+      POSTGRES_DB: luminary
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

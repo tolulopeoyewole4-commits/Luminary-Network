@@ -1,0 +1,28 @@
+{
+  "name": "luminary-ai",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Luminary AI — The AI Operating System for Knowledge Creators",
+  "scripts": {
+    "dev:web": "pnpm --filter web dev",
+    "build:web": "pnpm --filter web build",
+    "lint:web": "pnpm --filter web lint",
+    "test:web": "pnpm --filter web test",
+    "typecheck:web": "pnpm --filter web typecheck",
+    "dev:api": "cd apps/api && .venv/bin/uvicorn app.main:app --reload --host 0.0.0.0 --port 8000",
+    "worker": "cd apps/api && .venv/bin/python -m app.workers.run",
+    "test:api": "cd apps/api && .venv/bin/pytest -q",
+    "test": "pnpm test:web && pnpm test:api",
+    "gate": "pnpm typecheck:web && pnpm lint:web && pnpm test:web && pnpm test:api && pnpm build:web",
+    "sql:order": "bash scripts/print-sql-apply-order.sh",
+    "sql:bundle": "bash scripts/bundle-sql.sh",
+    "health:api": "bash scripts/check-api-health.sh",
+    "verify:env:web": "bash scripts/verify-env.sh web",
+    "verify:env:api": "bash scripts/verify-env.sh api",
+    "smoke:local": "bash scripts/smoke-local.sh"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@10.33.3"
+}

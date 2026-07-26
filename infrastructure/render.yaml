@@ -1,0 +1,18 @@
+# Render Blueprint for the Luminary AI API.
+# https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: luminary-ai-api
+    runtime: docker
+    dockerfilePath: ./apps/api/Dockerfile
+    dockerContext: ./apps/api
+    plan: starter
+    healthCheckPath: /health
+    envVars:
+      - key: INTERNAL_API_TOKEN
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: MAX_EXTRACT_UPLOAD_MB
+        value: "55"
