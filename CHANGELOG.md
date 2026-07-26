@@ -2,6 +2,13 @@
 
 All notable changes to Luminary AI are documented here.
 
+## [0.24.1] — Post-merge ops
+
+### Changed
+
+- Documented MVP-on-`main` status after cutover PR #25; release checklist now starts at Supabase deploy.
+- Closed superseded milestone draft PRs #1–#24.
+
 ## [0.24.0] — Milestone 24
 
 ### Added

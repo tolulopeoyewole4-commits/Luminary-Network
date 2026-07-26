@@ -1,10 +1,10 @@
 # Release checklist (MVP cutover)
 
-Use this to promote Milestones 1–24 to `main` (merge train **or** one-shot tip/`mvp-cutover` PR).
+**Status:** Milestones 1–24 are on `main` (merged via [#25](https://github.com/tolulopeoyewole4-commits/Luminary-Network/pull/25)). Stacked draft PRs #1–#24 are closed. Continue from **B. Supabase** below.
 
-## A. Merge train
+## A. Merge train (done)
 
-Draft PRs are stacked. Merge **oldest → newest** so each PR’s base lands before the next:
+Historical reference — merge **oldest → newest** if rebuilding the stack:
 
 | Order | PR | Branch | Base |
 |------:|----|--------|------|
