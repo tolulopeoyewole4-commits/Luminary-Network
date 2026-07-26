@@ -6,6 +6,7 @@ import { useState, useTransition } from "react";
 
 import { ProcessDocumentButton } from "@/components/documents/ProcessDocumentButton";
 import { ProcessVideoButton } from "@/components/jobs/ProcessVideoButton";
+import { GenerateTranscriptButton } from "@/components/transcripts/GenerateTranscriptButton";
 import { Alert } from "@/components/ui/Alert";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { isDocumentProcessableType } from "@/lib/documents/constants";
@@ -165,6 +166,22 @@ export function SourceFileList({ files, projectId }: SourceFileListProps) {
                           : "Process video"
                       }
                     />
+                  ) : null}
+                  {canProcessVideo &&
+                  file.processing_status !== "uploading" ? (
+                    <>
+                      <Link
+                        href={`/projects/${projectId}/files/${file.id}/transcript`}
+                        className="btn-secondary"
+                      >
+                        Transcript
+                      </Link>
+                      <GenerateTranscriptButton
+                        sourceFileId={file.id}
+                        projectId={projectId}
+                        label="Mock transcript"
+                      />
+                    </>
                   ) : null}
                   <button
                     type="button"

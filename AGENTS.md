@@ -28,7 +28,7 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 
 ## Current milestone
 
-**Milestone 7 — Video Upload and Processing Jobs** (complete; metadata via ffprobe)
+**Milestone 8 — Transcript Viewer** (complete; mock transcription only)
 
 ## Completed milestones
 
@@ -40,14 +40,16 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 - **Milestone 5 — Course Outline Generator**: AI provider abstraction + mock, courses/modules/lessons with source references, editable save flow.
 - **Milestone 6 — Social Content Generator**: generated_content library, multi-platform mock outputs, edit/save/duplicate with source references.
 - **Milestone 7 — Video Processing Jobs**: video_metadata jobs, ffprobe extraction, progress UI, retry failed jobs, auto-queue after video upload.
+- **Milestone 8 — Transcript Viewer**: `transcripts` / `transcript_segments` + RLS, mock `video_transcribe` jobs, editable segments, search, jump-to-time with signed video preview.
 
 ## Known issues
 
 - End-to-end flows require Supabase credentials, applied SQL, and a running FastAPI service with FFmpeg/ffprobe.
 - Large video metadata extraction currently runs in a server action (UI stays usable via async client continuation); a dedicated worker queue can replace this later.
 - Paid AI providers remain disabled until `AI_PROVIDER` is explicitly extended beyond `mock`.
+- Transcripts are mocked (no speech-to-text provider); replace `buildMockTranscriptSegments` when a real STT API is approved.
 
 ## Next tasks
 
-- Milestone 8: transcript viewer.
 - Milestone 9: clip candidate review.
+- Milestone 10: FFmpeg clip export.

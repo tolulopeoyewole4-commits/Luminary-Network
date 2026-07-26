@@ -205,6 +205,34 @@ export type GeneratedContent = {
   updated_at: string;
 };
 
+export type TranscriptStatus = "draft" | "processing" | "ready" | "failed";
+
+export type Transcript = {
+  id: string;
+  user_id: string;
+  project_id: string;
+  source_file_id: string;
+  language: string;
+  full_text: string;
+  status: TranscriptStatus;
+  error_message: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type TranscriptSegment = {
+  id: string;
+  transcript_id: string;
+  user_id: string;
+  start_time: number;
+  end_time: number;
+  speaker: string | null;
+  text: string;
+  confidence: number | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -454,6 +482,51 @@ export type Database = {
         };
         Relationships: [];
       };
+      transcripts: {
+        Row: Transcript;
+        Insert: {
+          id?: string;
+          user_id: string;
+          project_id: string;
+          source_file_id: string;
+          language?: string;
+          full_text?: string;
+          status?: TranscriptStatus;
+          error_message?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          language?: string;
+          full_text?: string;
+          status?: TranscriptStatus;
+          error_message?: string | null;
+        };
+        Relationships: [];
+      };
+      transcript_segments: {
+        Row: TranscriptSegment;
+        Insert: {
+          id?: string;
+          transcript_id: string;
+          user_id: string;
+          start_time: number;
+          end_time: number;
+          speaker?: string | null;
+          text?: string;
+          confidence?: number | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          start_time?: number;
+          end_time?: number;
+          speaker?: string | null;
+          text?: string;
+          confidence?: number | null;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -468,6 +541,7 @@ export type Database = {
       course_status: CourseStatus;
       generated_content_type: GeneratedContentType;
       generation_status: GenerationStatus;
+      transcript_status: TranscriptStatus;
     };
     CompositeTypes: Record<string, never>;
   };

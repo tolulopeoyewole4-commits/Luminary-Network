@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import { DocumentSectionViewer } from "@/components/documents/DocumentSectionViewer";
 import { ProcessDocumentButton } from "@/components/documents/ProcessDocumentButton";
 import { ProcessVideoButton } from "@/components/jobs/ProcessVideoButton";
+import { GenerateTranscriptButton } from "@/components/transcripts/GenerateTranscriptButton";
 import { Alert } from "@/components/ui/Alert";
 import { isDocumentProcessableType } from "@/lib/documents/constants";
 import {
@@ -12,6 +13,7 @@ import {
   listDocumentSections,
 } from "@/lib/documents/queries";
 import { createClient } from "@/lib/supabase/server";
+import { getTranscriptForSourceFile } from "@/lib/transcripts/queries";
 import {
   SOURCE_FILE_TYPE_LABELS,
   VIDEO_FILE_TYPES,
@@ -57,10 +59,12 @@ export default async function DocumentViewerPage({
     notFound();
   }
 
-  const [{ sections, error: sectionsError }, latestJob] = await Promise.all([
-    listDocumentSections(supabase, file.id),
-    getLatestDocumentJob(supabase, file.id),
-  ]);
+  const [{ sections, error: sectionsError }, latestJob, transcriptResult] =
+    await Promise.all([
+      listDocumentSections(supabase, file.id),
+      getLatestDocumentJob(supabase, file.id),
+      getTranscriptForSourceFile(supabase, file.id),
+    ]);
 
   const canProcessDoc = isDocumentProcessableType(file.file_type);
   const canProcessVideo = (VIDEO_FILE_TYPES as readonly string[]).includes(
@@ -68,6 +72,7 @@ export default async function DocumentViewerPage({
   );
   const duration = formatDuration(file.video_duration_seconds);
   const meta = file.media_metadata ?? {};
+  const hasTranscript = Boolean(transcriptResult.transcript);
 
   return (
     <div className="space-y-8">
@@ -103,6 +108,11 @@ export default async function DocumentViewerPage({
                 {meta.audio_codec ? ` / ${meta.audio_codec}` : ""}
               </span>
             ) : null}
+            {hasTranscript ? (
+              <span className="rounded-lg bg-white/80 px-2.5 py-1 font-semibold text-muted ring-1 ring-[var(--border)]">
+                Transcript ready
+              </span>
+            ) : null}
           </div>
         </div>
         <div className="flex flex-wrap gap-3">
@@ -132,6 +142,25 @@ export default async function DocumentViewerPage({
               }
             />
           ) : null}
+          {canProcessVideo && file.processing_status !== "uploading" ? (
+            <>
+              <Link
+                href={`/projects/${projectId}/files/${file.id}/transcript`}
+                className="btn-secondary"
+              >
+                {hasTranscript ? "Open transcript" : "Transcript"}
+              </Link>
+              <GenerateTranscriptButton
+                sourceFileId={file.id}
+                projectId={projectId}
+                label={
+                  hasTranscript
+                    ? "Regenerate mock transcript"
+                    : "Generate mock transcript"
+                }
+              />
+            </>
+          ) : null}
         </div>
       </section>
 
@@ -141,8 +170,8 @@ export default async function DocumentViewerPage({
 
       {canProcessVideo ? (
         <Alert tone="info">
-          Video metadata (duration, dimensions, codecs) is extracted with FFmpeg.
-          Transcript and clip tools arrive in later milestones.
+          Video metadata uses FFmpeg. Generate a mock transcript to edit
+          timestamped segments and jump to moments in the private video preview.
         </Alert>
       ) : null}
 

@@ -2,6 +2,17 @@
 
 All notable changes to Luminary AI are documented here.
 
+## [0.8.0] — Milestone 8
+
+### Added
+
+- `transcripts` and `transcript_segments` migrations with owner-scoped RLS.
+- Mock `video_transcribe` processing jobs (no external speech API).
+- Transcript viewer with private signed video preview, search, speaker/text edit, and jump-to-time.
+- Generate/regenerate entry points from project file list and video file page.
+- Retry support for failed `video_transcribe` jobs.
+- Mock transcript unit tests and SQL contract tests.
+
 ## [0.7.0] — Milestone 7
 
 ### Added

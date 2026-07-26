@@ -79,6 +79,15 @@ Browser
 5. Results are stored on `source_files` (`video_duration_seconds`, `media_metadata`).
 6. Failed jobs can be retried from the jobs UI.
 
+## Transcript viewer (Milestone 8)
+
+1. Creators open a video source and start a `video_transcribe` job.
+2. With no speech API configured, Next.js builds deterministic mock segments from duration/title.
+3. One `transcripts` row per source file stores language + full text; segments store start/end, speaker, text, confidence.
+4. The transcript page signs a short-lived URL for private video preview.
+5. UI supports search, speaker/text edits (persisted), and click-to-seek by timestamp.
+6. Failed transcription jobs can be retried from the jobs UI (reuses the job row).
+
 ## Storage
 
 - Private Supabase Storage bucket: `source-files`.

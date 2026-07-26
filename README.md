@@ -113,9 +113,9 @@ pnpm dev:api
 
 ## Current milestone
 
-**Milestone 7 — Video Upload and Processing Jobs**
+**Milestone 8 — Transcript Viewer**
 
-Private MP4/MOV uploads queue video metadata jobs (duration, dimensions, codecs) with progress, failure states, and retry. FFmpeg/`ffprobe` required on the API host.
+Video sources can generate a mock timestamped transcript (no speech API). Creators search, edit speaker/text, and jump to moments via a private signed video preview. Segments are RLS-scoped per owner.
 
 ```bash
 # apps/web/.env.local and apps/api/.env
@@ -123,6 +123,8 @@ INTERNAL_API_TOKEN=dev-internal-token
 API_URL=http://localhost:8000
 AI_PROVIDER=mock
 ```
+
+Apply SQL through `0008_transcripts.sql` and `0008_transcripts_rls.sql` after earlier migrations.
 
 ---
 
