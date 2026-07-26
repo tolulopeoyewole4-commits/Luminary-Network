@@ -43,8 +43,8 @@ yarn-error.log*
 apps/web/coverage/
 apps/api/.coverage
 
-# Local media / uploads
+# Local media scratch space (do not ignore app source under **/uploads/)
 tmp/
-uploads/
+/uploads/
 *.mp4
 !docs/**/*.mp4
