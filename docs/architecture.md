@@ -17,7 +17,7 @@ Browser
 
 - Next.js App Router with TypeScript strict mode.
 - Server Components for protected pages; client components for forms.
-- Middleware refreshes the Supabase session and guards authenticated routes (`/dashboard`, `/settings`, `/projects`).
+- Next.js `proxy.ts` refreshes the Supabase session and guards authenticated routes (`/dashboard`, `/settings`, `/projects`).
 - Tailwind CSS for styling.
 - Baseline security headers configured in `next.config.ts`.
 

@@ -28,7 +28,7 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 
 ## Current milestone
 
-**Milestone 21 — Markdown/text exports** (complete)
+**Milestone 22 — Next.js proxy migration** (complete)
 
 ## Completed milestones
 
@@ -54,6 +54,7 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 - **Milestone 19 — Job result links**: jobs list deep-links to completed outputs; generator pages show live AI job status.
 - **Milestone 20 — Cancel processing jobs**: cancel queued/processing jobs; cooperative in-flight guards; retry cancelled jobs.
 - **Milestone 21 — Markdown/text exports**: download courses as Markdown; download social content as Markdown or plain text.
+- **Milestone 22 — Next.js proxy migration**: replace deprecated `middleware.ts` with `proxy.ts` session guard.
 
 ## Known issues
 
@@ -66,5 +67,5 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 
 ## Next tasks
 
-- Operator cutover using `docs/release-checklist.md` (merge PRs #1→#21, apply SQL bundle including `0013`, deploy API + web).
+- Operator cutover using `docs/release-checklist.md` (merge PRs #1→#22, apply SQL bundle including `0013`, deploy API + web).
 - Optional: dedicated worker queue; paid AI providers; real STT/caption providers.

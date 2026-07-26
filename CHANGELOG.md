@@ -2,6 +2,13 @@
 
 All notable changes to Luminary AI are documented here.
 
+## [0.22.0] — Milestone 22
+
+### Changed
+
+- Migrated Next.js `middleware.ts` to the `proxy.ts` convention (Next.js 16).
+- Renamed Supabase session helper to `lib/supabase/session.ts`.
+
 ## [0.21.0] — Milestone 21
 
 ### Added

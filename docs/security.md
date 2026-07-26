@@ -4,7 +4,7 @@
 
 - Email/password via Supabase Auth.
 - Sessions handled with `@supabase/ssr` cookies.
-- Middleware blocks unauthenticated access to `/dashboard`, `/settings`, and future app routes.
+- Next.js `proxy.ts` blocks unauthenticated access to `/dashboard`, `/settings`, and future app routes.
 - Password recovery uses Supabase reset-email flow.
 
 ## Row-Level Security

@@ -112,9 +112,9 @@ pnpm health:api
 
 ## Current milestone
 
-**Milestone 21 — Markdown/text exports**
+**Milestone 22 — Next.js proxy migration**
 
-Download course outlines as Markdown, and social/content items as Markdown or plain text, for editing or publishing outside Luminary.
+Auth session refresh and route guards now use Next.js 16 `proxy.ts` instead of the deprecated `middleware.ts` convention.
 
 - Release steps: [`docs/release-checklist.md`](docs/release-checklist.md)
 - Host setup: [`docs/deployment.md`](docs/deployment.md)
