@@ -129,6 +129,12 @@ Browser
 5. Creators can edit cues and download WebVTT or SRT (generated on demand, not stored as separate objects).
 6. Failed `caption_generate` jobs can be retried from the jobs UI.
 
+## Job result navigation (Milestone 19)
+
+1. `getJobResultLink()` maps each `processing_jobs` row to the best destination (course editor, content item/library, transcript, clips, captions, or file extract).
+2. Course/social completed jobs read `payload.resultCourseId` / `payload.resultContentIds`.
+3. The jobs list shows that deep-link CTA; generator pages poll while `course_generate` / `social_generate` are queued or processing.
+
 ## Storage
 
 - Private Supabase Storage bucket: `source-files`.
