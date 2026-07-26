@@ -1,6 +1,6 @@
 # Release checklist (MVP cutover)
 
-Use this after Milestones 1–22 are merged (or when promoting the tip of the milestone chain).
+Use this after Milestones 1–23 are merged (or when promoting the tip of the milestone chain).
 
 ## A. Merge train
 
@@ -30,10 +30,11 @@ Draft PRs are stacked. Merge **oldest → newest** so each PR’s base lands bef
 | 20 | #20 | `cursor/milestone-20-cancel-jobs-c4ad` | M19 |
 | 21 | #21 | `cursor/milestone-21-export-markdown-c4ad` | M20 |
 | 22 | #22 | `cursor/milestone-22-next-proxy-c4ad` | M21 |
+| 23 | #23 | `cursor/milestone-23-clipboard-copy-c4ad` | M22 |
 
 After each merge, retarget the next open PR to `main` (or merge via the stack as-is if GitHub keeps parent bases).
 
-Alternative: merge the tip branch `cursor/milestone-22-next-proxy-c4ad` (or this release branch) into `main` in one shot once reviews are done.
+Alternative: merge the tip branch `cursor/milestone-23-clipboard-copy-c4ad` (or this release branch) into `main` in one shot once reviews are done.
 
 ## B. Supabase
 
@@ -56,7 +57,7 @@ Alternative: merge the tip branch `cursor/milestone-22-next-proxy-c4ad` (or this
 2. Set public Supabase + app/API URLs and matching `INTERNAL_API_TOKEN` / `API_URL`.
 3. Keep `AI_PROVIDER=mock` for MVP.
 4. Smoke: register/login → create project → upload TXT → extract → open viewer.
-5. Generate a course/content item → Download Markdown (and content plain text).
+5. Generate a course/content item → Download Markdown (and content plain text) or Copy to clipboard.
 
 ## E. Video path smoke
 

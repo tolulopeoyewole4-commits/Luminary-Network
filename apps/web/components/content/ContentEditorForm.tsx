@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useActionState, useTransition } from "react";
 
+import { CopyContentButton } from "@/components/content/CopyContentButton";
 import { DownloadContentButton } from "@/components/content/DownloadContentButton";
 import { SourceReferenceList } from "@/components/courses/SourceReferenceList";
 import { Alert } from "@/components/ui/Alert";
@@ -155,6 +156,8 @@ export function ContentEditorForm({ item }: ContentEditorFormProps) {
         </button>
         <DownloadContentButton contentId={item.id} format="md" />
         <DownloadContentButton contentId={item.id} format="txt" />
+        <CopyContentButton contentId={item.id} format="txt" />
+        <CopyContentButton contentId={item.id} format="md" />
         <Link href={`/projects/${item.project_id}`} className="btn-secondary">
           Back to project
         </Link>

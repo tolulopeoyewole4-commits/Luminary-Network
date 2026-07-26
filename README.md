@@ -112,9 +112,9 @@ pnpm health:api
 
 ## Current milestone
 
-**Milestone 22 — Next.js proxy migration**
+**Milestone 23 — Clipboard copy exports**
 
-Auth session refresh and route guards now use Next.js 16 `proxy.ts` instead of the deprecated `middleware.ts` convention.
+Copy course Markdown and social content (Markdown or plain text) to the clipboard from the editors, alongside file downloads.
 
 - Release steps: [`docs/release-checklist.md`](docs/release-checklist.md)
 - Host setup: [`docs/deployment.md`](docs/deployment.md)

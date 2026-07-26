@@ -142,11 +142,12 @@ Browser
 3. In-flight `after()` workers use cooperative helpers (`mark/complete/fail…IfActive`) so they cannot overwrite a cancelled row.
 4. Cancelled jobs are retryable from the jobs list (same as failed).
 
-## Publish exports (Milestone 21)
+## Publish exports (Milestone 21 + 23)
 
 1. Course editor downloads a Markdown outline (`buildCourseMarkdown`) including modules, lessons, outcomes, and source references.
 2. Content editor downloads Markdown (structured) or plain text (body-first for pasting into social tools).
 3. Exports are generated on demand in server actions; no separate storage objects are created.
+4. Editors can also copy the same export payloads to the clipboard (`copyTextToClipboard`, with `execCommand` fallback).
 
 ## Storage
 

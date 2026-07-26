@@ -2,6 +2,14 @@
 
 All notable changes to Luminary AI are documented here.
 
+## [0.23.0] — Milestone 23
+
+### Added
+
+- Copy Markdown / Copy text buttons on course and content editors (clipboard).
+- Shared `copyTextToClipboard` helper with clipboard API + execCommand fallback.
+- Unit coverage for clipboard copying.
+
 ## [0.22.0] — Milestone 22
 
 ### Changed

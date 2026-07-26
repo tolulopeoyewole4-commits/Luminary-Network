@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useActionState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
+import { CopyCourseButton } from "@/components/courses/CopyCourseButton";
 import { DownloadCourseButton } from "@/components/courses/DownloadCourseButton";
 import { SourceReferenceList } from "@/components/courses/SourceReferenceList";
 import { Alert } from "@/components/ui/Alert";
@@ -269,6 +270,7 @@ export function CourseEditorForm({ course }: CourseEditorFormProps) {
           {pending ? "Saving…" : "Save changes"}
         </button>
         <DownloadCourseButton courseId={course.id} />
+        <CopyCourseButton courseId={course.id} />
         <Link href={`/projects/${course.project_id}`} className="btn-secondary">
           Back to project
         </Link>
