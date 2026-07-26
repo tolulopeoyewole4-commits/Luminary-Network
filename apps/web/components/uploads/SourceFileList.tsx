@@ -6,6 +6,7 @@ import { useState, useTransition } from "react";
 
 import { ProcessDocumentButton } from "@/components/documents/ProcessDocumentButton";
 import { ProcessVideoButton } from "@/components/jobs/ProcessVideoButton";
+import { GenerateCaptionsButton } from "@/components/captions/GenerateCaptionsButton";
 import { DetectClipsButton } from "@/components/clips/DetectClipsButton";
 import { GenerateTranscriptButton } from "@/components/transcripts/GenerateTranscriptButton";
 import { Alert } from "@/components/ui/Alert";
@@ -192,6 +193,17 @@ export function SourceFileList({ files, projectId }: SourceFileListProps) {
                         sourceFileId={file.id}
                         projectId={projectId}
                         label="Detect clips"
+                      />
+                      <Link
+                        href={`/projects/${projectId}/files/${file.id}/captions`}
+                        className="btn-secondary"
+                      >
+                        Captions
+                      </Link>
+                      <GenerateCaptionsButton
+                        sourceFileId={file.id}
+                        projectId={projectId}
+                        label="Captions"
                       />
                     </>
                   ) : null}

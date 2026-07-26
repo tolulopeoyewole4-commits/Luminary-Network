@@ -113,9 +113,9 @@ pnpm dev:api
 
 ## Current milestone
 
-**Milestone 10 — FFmpeg Clip Export**
+**Milestone 11 — Captions**
 
-Approved clip candidates export through FastAPI + FFmpeg into private Supabase Storage (`…/exports/{uuid}.mp4`). Creators download via short-lived signed URLs. `ffmpeg`/`ffprobe` required on the API host.
+Video sources can generate timed caption cues (from transcript when available), edit them, preview with a WebVTT track, and download WebVTT/SRT. Cues are RLS-scoped per owner.
 
 ```bash
 # apps/web/.env.local and apps/api/.env
@@ -124,7 +124,7 @@ API_URL=http://localhost:8000
 AI_PROVIDER=mock
 ```
 
-Apply SQL through `0010_exported_clips.sql` and `0010_exported_clips_rls.sql` after earlier migrations.
+Apply SQL through `0011_captions.sql` and `0011_captions_rls.sql` after earlier migrations.
 
 ---
 

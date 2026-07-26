@@ -106,6 +106,15 @@ Browser
 5. `exported_clips` stores metadata; the candidate status becomes `exported`.
 6. Downloads use short-lived signed URLs; failed export jobs can be retried.
 
+## Captions (Milestone 11)
+
+1. Creators start a `caption_generate` job on a video source.
+2. Cues are built from transcript segments when present; otherwise from mock transcript windows.
+3. One `captions` row per source file stores language/status; `caption_cues` store start/end/text.
+4. The captions page signs a short-lived URL for private video preview and overlays a generated WebVTT track.
+5. Creators can edit cues and download WebVTT or SRT (generated on demand, not stored as separate objects).
+6. Failed `caption_generate` jobs can be retried from the jobs UI.
+
 ## Storage
 
 - Private Supabase Storage bucket: `source-files`.

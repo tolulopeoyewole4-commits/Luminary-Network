@@ -110,6 +110,12 @@ export default async function ClipsPage({ params }: ClipsPageProps) {
           >
             Transcript
           </Link>
+          <Link
+            href={`/projects/${projectId}/files/${fileId}/captions`}
+            className="btn-secondary"
+          >
+            Captions
+          </Link>
           <DetectClipsButton
             sourceFileId={file.id}
             projectId={projectId}

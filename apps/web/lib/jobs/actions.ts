@@ -368,6 +368,24 @@ export async function retryProcessingJobAction(
     };
   }
 
+  if (job.job_type === "caption_generate") {
+    if (!job.source_file_id) {
+      return { ok: false, error: "This job has no linked source file." };
+    }
+    const { generateCaptionsAction } = await import("@/lib/captions/actions");
+    const result = await generateCaptionsAction(job.source_file_id, {
+      existingJobId: job.id,
+    });
+    if (!result.ok) {
+      return { ok: false, error: result.error };
+    }
+    return {
+      ok: true,
+      jobId: result.jobId ?? job.id,
+      message: result.message,
+    };
+  }
+
   return {
     ok: false,
     error: `Retry is not implemented for job type "${job.job_type}" yet.`,

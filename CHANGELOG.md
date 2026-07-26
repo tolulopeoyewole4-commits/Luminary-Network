@@ -2,6 +2,18 @@
 
 All notable changes to Luminary AI are documented here.
 
+## [0.11.0] — Milestone 11
+
+### Added
+
+- `captions` and `caption_cues` migrations with owner-scoped RLS.
+- `caption_generate` processing jobs grounded in transcript segments (mock fallback).
+- Caption editor with signed video preview, WebVTT track overlay, search, and cue edits.
+- WebVTT and SRT download actions.
+- Entry points from file page, file list, transcript, and clips pages.
+- Retry support for failed `caption_generate` jobs.
+- Caption format unit tests and SQL contract tests.
+
 ## [0.10.0] — Milestone 10
 
 ### Added

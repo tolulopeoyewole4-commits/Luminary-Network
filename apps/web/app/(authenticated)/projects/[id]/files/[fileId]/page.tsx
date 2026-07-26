@@ -5,9 +5,11 @@ import type { Metadata } from "next";
 import { DocumentSectionViewer } from "@/components/documents/DocumentSectionViewer";
 import { ProcessDocumentButton } from "@/components/documents/ProcessDocumentButton";
 import { ProcessVideoButton } from "@/components/jobs/ProcessVideoButton";
+import { GenerateCaptionsButton } from "@/components/captions/GenerateCaptionsButton";
 import { DetectClipsButton } from "@/components/clips/DetectClipsButton";
 import { GenerateTranscriptButton } from "@/components/transcripts/GenerateTranscriptButton";
 import { Alert } from "@/components/ui/Alert";
+import { getCaptionsForSourceFile } from "@/lib/captions/queries";
 import { listClipCandidatesForSourceFile } from "@/lib/clips/queries";
 import { isDocumentProcessableType } from "@/lib/documents/constants";
 import {
@@ -66,11 +68,13 @@ export default async function DocumentViewerPage({
     latestJob,
     transcriptResult,
     clipsResult,
+    captionsResult,
   ] = await Promise.all([
     listDocumentSections(supabase, file.id),
     getLatestDocumentJob(supabase, file.id),
     getTranscriptForSourceFile(supabase, file.id),
     listClipCandidatesForSourceFile(supabase, file.id),
+    getCaptionsForSourceFile(supabase, file.id),
   ]);
 
   const canProcessDoc = isDocumentProcessableType(file.file_type);
@@ -84,6 +88,7 @@ export default async function DocumentViewerPage({
   const approvedClips = clipsResult.clips.filter(
     (clip) => clip.status === "approved",
   ).length;
+  const hasCaptions = Boolean(captionsResult.caption);
 
   return (
     <div className="space-y-8">
@@ -128,6 +133,11 @@ export default async function DocumentViewerPage({
               <span className="rounded-lg bg-white/80 px-2.5 py-1 font-semibold text-muted ring-1 ring-[var(--border)]">
                 {clipCount} clip candidates
                 {approvedClips ? ` · ${approvedClips} approved` : ""}
+              </span>
+            ) : null}
+            {hasCaptions ? (
+              <span className="rounded-lg bg-white/80 px-2.5 py-1 font-semibold text-muted ring-1 ring-[var(--border)]">
+                Captions ready
               </span>
             ) : null}
           </div>
@@ -189,6 +199,17 @@ export default async function DocumentViewerPage({
                   clipCount > 0 ? "Re-detect clips" : "Detect clip candidates"
                 }
               />
+              <Link
+                href={`/projects/${projectId}/files/${file.id}/captions`}
+                className="btn-secondary"
+              >
+                {hasCaptions ? "Edit captions" : "Captions"}
+              </Link>
+              <GenerateCaptionsButton
+                sourceFileId={file.id}
+                projectId={projectId}
+                label={hasCaptions ? "Regenerate captions" : "Generate captions"}
+              />
             </>
           ) : null}
         </div>
@@ -200,8 +221,8 @@ export default async function DocumentViewerPage({
 
       {canProcessVideo ? (
         <Alert tone="info">
-          Generate a mock transcript, detect clip candidates, approve windows,
-          then export with FFmpeg to private storage for secure download.
+          Transcript → clips → captions: generate timed cues, edit them, then
+          download WebVTT/SRT. Approved clips still export with FFmpeg.
         </Alert>
       ) : null}
 

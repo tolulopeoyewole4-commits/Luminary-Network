@@ -85,7 +85,8 @@ export type ProcessingJobType =
   | "video_metadata"
   | "video_transcribe"
   | "clip_detect"
-  | "video_export";
+  | "video_export"
+  | "caption_generate";
 
 export type ProcessingJobStatus =
   | "queued"
@@ -274,6 +275,32 @@ export type ExportedClip = {
   internal_storage_path: string;
   status: ExportedClipStatus;
   error_message: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CaptionStatus = "draft" | "processing" | "ready" | "failed";
+
+export type Caption = {
+  id: string;
+  user_id: string;
+  project_id: string;
+  source_file_id: string;
+  transcript_id: string | null;
+  language: string;
+  status: CaptionStatus;
+  error_message: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CaptionCue = {
+  id: string;
+  caption_id: string;
+  user_id: string;
+  start_time: number;
+  end_time: number;
+  text: string;
   created_at: string;
   updated_at: string;
 };
@@ -637,6 +664,47 @@ export type Database = {
         };
         Relationships: [];
       };
+      captions: {
+        Row: Caption;
+        Insert: {
+          id?: string;
+          user_id: string;
+          project_id: string;
+          source_file_id: string;
+          transcript_id?: string | null;
+          language?: string;
+          status?: CaptionStatus;
+          error_message?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          transcript_id?: string | null;
+          language?: string;
+          status?: CaptionStatus;
+          error_message?: string | null;
+        };
+        Relationships: [];
+      };
+      caption_cues: {
+        Row: CaptionCue;
+        Insert: {
+          id?: string;
+          caption_id: string;
+          user_id: string;
+          start_time: number;
+          end_time: number;
+          text?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          start_time?: number;
+          end_time?: number;
+          text?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -654,6 +722,7 @@ export type Database = {
       transcript_status: TranscriptStatus;
       clip_candidate_status: ClipCandidateStatus;
       exported_clip_status: ExportedClipStatus;
+      caption_status: CaptionStatus;
     };
     CompositeTypes: Record<string, never>;
   };

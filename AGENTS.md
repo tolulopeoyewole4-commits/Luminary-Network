@@ -28,7 +28,7 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 
 ## Current milestone
 
-**Milestone 10 — FFmpeg Clip Export** (complete)
+**Milestone 11 — Captions** (complete)
 
 ## Completed milestones
 
@@ -43,6 +43,7 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 - **Milestone 8 — Transcript Viewer**: `transcripts` / `transcript_segments` + RLS, mock `video_transcribe` jobs, editable segments, search, jump-to-time with signed video preview.
 - **Milestone 9 — Clip Candidate Review**: `clip_candidates` + RLS, mock `clip_detect` jobs, approve/reject/edit windows with signed preview.
 - **Milestone 10 — FFmpeg Clip Export**: `exported_clips` + RLS, FastAPI `/api/v1/videos/export-clip`, private storage paths, signed downloads, retry failed `video_export` jobs.
+- **Milestone 11 — Captions**: `captions` / `caption_cues` + RLS, `caption_generate` jobs, cue editor with WebVTT preview, WebVTT/SRT download.
 
 ## Known issues
 
@@ -54,5 +55,4 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 
 ## Next tasks
 
-- Milestone 11: captions.
 - Milestone 12: deployment.
