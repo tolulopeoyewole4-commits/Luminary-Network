@@ -2,6 +2,16 @@
 
 All notable changes to Luminary AI are documented here.
 
+## [0.13.0] — Milestone 13
+
+### Added
+
+- Release cutover checklist with PR merge train (`docs/release-checklist.md`).
+- `pnpm sql:bundle` to generate `database/dist/supabase_schema.sql` for one-shot Supabase apply.
+- `pnpm smoke:local` local release smoke (CI gate + SQL bundle + optional API health).
+- Contract tests for SQL apply-order paths and release assets.
+- Architecture/docs refresh for the completed MVP surface.
+
 ## [0.12.0] — Milestone 12
 
 ### Added

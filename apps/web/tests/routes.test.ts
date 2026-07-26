@@ -3,10 +3,12 @@ import { describe, expect, it } from "vitest";
 import { isAuthPath, isProtectedPath } from "@/lib/auth/routes";
 
 describe("route helpers", () => {
-  it("marks dashboard and settings as protected", () => {
+  it("marks dashboard, settings, and projects as protected", () => {
     expect(isProtectedPath("/dashboard")).toBe(true);
     expect(isProtectedPath("/dashboard/extra")).toBe(true);
     expect(isProtectedPath("/settings")).toBe(true);
+    expect(isProtectedPath("/projects")).toBe(true);
+    expect(isProtectedPath("/projects/abc/files/xyz/captions")).toBe(true);
     expect(isProtectedPath("/login")).toBe(false);
     expect(isProtectedPath("/")).toBe(false);
   });

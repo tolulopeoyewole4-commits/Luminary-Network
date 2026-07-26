@@ -8,23 +8,24 @@ Luminary AI is a monorepo with a Next.js frontend, a FastAPI processing API, and
 Browser
   └── apps/web (Next.js)
         ├── Supabase Auth (session cookies)
-        ├── Supabase Postgres (RLS)
-        └── apps/api (FastAPI) — processing jobs (later)
-              └── workers (FFmpeg, document extraction)
+        ├── Supabase Postgres (RLS + private Storage)
+        └── apps/api (FastAPI) — documents + FFmpeg video jobs
+              (called only from Next.js server actions via INTERNAL_API_TOKEN)
 ```
 
 ## Frontend (`apps/web`)
 
 - Next.js App Router with TypeScript strict mode.
 - Server Components for protected pages; client components for forms.
-- Middleware refreshes the Supabase session and guards authenticated routes.
+- Middleware refreshes the Supabase session and guards authenticated routes (`/dashboard`, `/settings`, `/projects`).
 - Tailwind CSS for styling.
+- Baseline security headers configured in `next.config.ts`.
 
 ## Backend (`apps/api`)
 
-- FastAPI service for long-running and privileged work.
-- Milestone 1 exposes `/health` only.
-- Later milestones add document extraction, AI generation (server-side), and FFmpeg export.
+- FastAPI service for privileged/media work: document extract, video metadata, clip export.
+- `/health` reports process liveness plus `ffmpeg`/`ffprobe` availability.
+- CORS allow-list via `ALLOWED_ORIGINS` (localhost defaults always included).
 
 ## Database
 
@@ -129,11 +130,12 @@ Browser
 - Feature flag: `AI_PROVIDER=mock`.
 - Course outlines are validated with Zod and always include source section references.
 
-## Deployment (Milestone 12)
+## Deployment (Milestone 12+)
 
 - Web → Vercel (`apps/web`, see `docs/deployment.md` and root `vercel.json`)
 - API → Docker on Fly.io / Render / Railway (`apps/api/Dockerfile`, FFmpeg required)
-- Auth/DB/Storage → Supabase (apply `database/APPLY_ORDER.md`)
+- Auth/DB/Storage → Supabase (`database/APPLY_ORDER.md` or bundled `database/dist/supabase_schema.sql`)
 - CI → GitHub Actions (`.github/workflows/ci.yml`)
+- Cutover checklist → `docs/release-checklist.md`
 - API CORS origins come from `ALLOWED_ORIGINS` (plus localhost defaults)
 - Internal processing remains server-to-server via `INTERNAL_API_TOKEN`

@@ -104,17 +104,21 @@ pnpm health:api
 | `pnpm test` | All tests |
 | `pnpm ci` | Full local CI gate |
 | `pnpm sql:order` | Print SQL apply order |
+| `pnpm sql:bundle` | Build `database/dist/supabase_schema.sql` |
 | `pnpm health:api` | Smoke-check API `/health` |
+| `pnpm smoke:local` | CI + SQL bundle (+ API health if up) |
 
 ---
 
 ## Current milestone
 
-**Milestone 12 — Deployment**
+**Milestone 13 — Release readiness**
 
-Production guidance for Vercel (web), Fly/Render/Railway (API with FFmpeg), Supabase SQL apply order, GitHub Actions CI, CORS via `ALLOWED_ORIGINS`, and deploy smoke scripts.
+MVP feature work (M1–M12) is complete. This milestone packages cutover: merge-train checklist, one-shot SQL bundle, and local smoke gates.
 
-See [`docs/deployment.md`](docs/deployment.md).
+- Release steps: [`docs/release-checklist.md`](docs/release-checklist.md)
+- Host setup: [`docs/deployment.md`](docs/deployment.md)
+- SQL order / bundle: `pnpm sql:order` · `pnpm sql:bundle` → `database/dist/supabase_schema.sql`
 
 ```bash
 # Production secrets (examples)

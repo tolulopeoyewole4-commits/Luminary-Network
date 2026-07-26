@@ -14,9 +14,11 @@
     "test": "pnpm test:web && pnpm test:api",
     "ci": "pnpm typecheck:web && pnpm lint:web && pnpm test:web && pnpm test:api && pnpm build:web",
     "sql:order": "bash scripts/print-sql-apply-order.sh",
+    "sql:bundle": "bash scripts/bundle-sql.sh",
     "health:api": "bash scripts/check-api-health.sh",
     "verify:env:web": "bash scripts/verify-env.sh web",
-    "verify:env:api": "bash scripts/verify-env.sh api"
+    "verify:env:api": "bash scripts/verify-env.sh api",
+    "smoke:local": "bash scripts/smoke-local.sh"
   },
   "engines": {
     "node": ">=20"

@@ -16,10 +16,14 @@ Do not put service-role keys or `INTERNAL_API_TOKEN` in `NEXT_PUBLIC_*` variable
 
 1. Create a Supabase project.
 2. Enable Email auth (Authentication → Providers).
-3. Apply SQL in the order listed in [`database/APPLY_ORDER.md`](../database/APPLY_ORDER.md) (SQL editor or CLI).
+3. Apply SQL:
+   - **One-shot:** run `pnpm sql:bundle` and paste [`database/dist/supabase_schema.sql`](../database/dist/supabase_schema.sql) into the SQL editor.
+   - **Manual:** follow [`database/APPLY_ORDER.md`](../database/APPLY_ORDER.md).
 4. Confirm the private `source-files` bucket exists after `0003_source_files_storage.sql`.
 5. Copy project URL and anon key for the web app.
 6. Keep the service role key server-only (optional for MVP; browser flows use the user JWT).
+
+Full operator checklist (merge train + smoke): [`docs/release-checklist.md`](release-checklist.md).
 
 Site URL / redirect URLs (Authentication → URL configuration):
 

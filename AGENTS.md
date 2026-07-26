@@ -28,7 +28,7 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 
 ## Current milestone
 
-**Milestone 12 — Deployment** (complete)
+**Milestone 13 — Release readiness** (complete; cutover is operator-owned)
 
 ## Completed milestones
 
@@ -45,6 +45,7 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 - **Milestone 10 — FFmpeg Clip Export**: `exported_clips` + RLS, FastAPI `/api/v1/videos/export-clip`, private storage paths, signed downloads, retry failed `video_export` jobs.
 - **Milestone 11 — Captions**: `captions` / `caption_cues` + RLS, `caption_generate` jobs, cue editor with WebVTT preview, WebVTT/SRT download.
 - **Milestone 12 — Deployment**: Vercel/Fly/Render guidance, SQL apply order, GitHub Actions CI, production CORS/`ALLOWED_ORIGINS`, hardened API Docker image, deploy smoke scripts.
+- **Milestone 13 — Release readiness**: merge-train/release checklist, SQL bundle for one-shot Supabase apply, local smoke script, docs refresh.
 
 ## Known issues
 
@@ -56,5 +57,5 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 
 ## Next tasks
 
-- Production cutover: apply SQL on Supabase, deploy API + web, run the post-deploy checklist in `docs/deployment.md`.
-- Optional: background worker queue for large video jobs; paid AI providers behind explicit flags.
+- Operator cutover using `docs/release-checklist.md` (merge PRs, apply SQL bundle, deploy API + web).
+- Optional product follow-ups: background worker queue; paid AI providers behind explicit flags; real STT/caption providers.

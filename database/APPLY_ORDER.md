@@ -2,6 +2,13 @@
 
 Run these files in the Supabase SQL editor (or CLI) **in this exact order** on a new project.
 
+For a one-shot paste, generate/use the bundle:
+
+```bash
+pnpm sql:bundle
+# → database/dist/supabase_schema.sql
+```
+
 ## Migrations + policies
 
 1. `migrations/0001_profiles.sql`
