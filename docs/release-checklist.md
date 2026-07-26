@@ -1,6 +1,6 @@
 # Release checklist (MVP cutover)
 
-Use this after Milestones 1–16 are merged (or when promoting the tip of the milestone chain).
+Use this after Milestones 1–17 are merged (or when promoting the tip of the milestone chain).
 
 ## A. Merge train
 
@@ -24,10 +24,11 @@ Draft PRs are stacked. Merge **oldest → newest** so each PR’s base lands bef
 | 14 | #14 | `cursor/milestone-14-async-jobs-c4ad` | M13 |
 | 15 | #15 | `cursor/milestone-15-async-export-c4ad` | M14 |
 | 16 | #16 | `cursor/milestone-16-async-document-extract-c4ad` | M15 |
+| 17 | #17 | `cursor/milestone-17-async-mock-jobs-c4ad` | M16 |
 
 After each merge, retarget the next open PR to `main` (or merge via the stack as-is if GitHub keeps parent bases).
 
-Alternative: merge the tip branch `cursor/milestone-16-async-document-extract-c4ad` (or this release branch) into `main` in one shot once reviews are done.
+Alternative: merge the tip branch `cursor/milestone-17-async-mock-jobs-c4ad` (or this release branch) into `main` in one shot once reviews are done.
 
 ## B. Supabase
 

@@ -1,8 +1,10 @@
 "use server";
 
+import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { isAsyncMockVideoJobsEnabled } from "@/lib/jobs/flags";
 import { createClient } from "@/lib/supabase/server";
 import { buildMockTranscriptSegments } from "@/lib/transcripts/mock";
 import { VIDEO_FILE_TYPES } from "@/lib/uploads/constants";
@@ -10,8 +12,23 @@ import { getOwnSourceFile } from "@/lib/uploads/queries";
 import type { SourceFileType } from "@/types/database";
 
 export type TranscriptActionResult =
-  | { ok: true; message: string; transcriptId?: string; jobId?: string }
+  | {
+      ok: true;
+      message: string;
+      transcriptId?: string;
+      jobId?: string;
+      queued?: boolean;
+    }
   | { ok: false; error: string };
+
+type EnqueuedTranscript = {
+  sourceFileId: string;
+  projectId: string;
+  jobId: string;
+  userId: string;
+  durationSeconds: number;
+  title: string;
+};
 
 async function requireUser() {
   const supabase = await createClient();
@@ -26,10 +43,20 @@ function isVideoType(fileType: SourceFileType): boolean {
   return (VIDEO_FILE_TYPES as readonly string[]).includes(fileType);
 }
 
-export async function generateMockTranscriptAction(
+function revalidateTranscriptPaths(projectId: string, sourceFileId: string) {
+  revalidatePath("/dashboard");
+  revalidatePath(`/projects/${projectId}`);
+  revalidatePath(`/projects/${projectId}/files/${sourceFileId}`);
+  revalidatePath(`/projects/${projectId}/files/${sourceFileId}/transcript`);
+}
+
+async function enqueueMockTranscript(
   sourceFileId: string,
   options?: { existingJobId?: string },
-): Promise<TranscriptActionResult> {
+): Promise<
+  | { ok: true; work: EnqueuedTranscript }
+  | { ok: false; error: string }
+> {
   const { supabase, user } = await requireUser();
   const { file, error } = await getOwnSourceFile(supabase, sourceFileId);
 
@@ -55,10 +82,10 @@ export async function generateMockTranscriptAction(
     await supabase
       .from("processing_jobs")
       .update({
-        status: "processing",
-        progress_percentage: 10,
+        status: "queued",
+        progress_percentage: 0,
         error_message: null,
-        started_at: new Date().toISOString(),
+        started_at: null,
         completed_at: null,
       })
       .eq("id", jobId);
@@ -70,9 +97,8 @@ export async function generateMockTranscriptAction(
         project_id: file.project_id,
         source_file_id: file.id,
         job_type: "video_transcribe",
-        status: "processing",
-        progress_percentage: 10,
-        started_at: new Date().toISOString(),
+        status: "queued",
+        progress_percentage: 0,
       })
       .select("id")
       .single();
@@ -84,11 +110,49 @@ export async function generateMockTranscriptAction(
     jobId = job.id;
   }
 
-  try {
-    const duration = file.video_duration_seconds ?? 60;
-    const mockSegments = buildMockTranscriptSegments({
-      durationSeconds: Number(duration),
+  revalidateTranscriptPaths(file.project_id, file.id);
+
+  return {
+    ok: true,
+    work: {
+      sourceFileId: file.id,
+      projectId: file.project_id,
+      jobId,
+      userId: user.id,
+      durationSeconds: Number(file.video_duration_seconds ?? 60),
       title: file.original_filename,
+    },
+  };
+}
+
+async function executeMockTranscript(
+  work: EnqueuedTranscript,
+): Promise<TranscriptActionResult> {
+  const supabase = await createClient();
+  const {
+    sourceFileId,
+    projectId,
+    jobId,
+    userId,
+    durationSeconds,
+    title,
+  } = work;
+
+  await supabase
+    .from("processing_jobs")
+    .update({
+      status: "processing",
+      progress_percentage: 10,
+      started_at: new Date().toISOString(),
+      error_message: null,
+      completed_at: null,
+    })
+    .eq("id", jobId);
+
+  try {
+    const mockSegments = buildMockTranscriptSegments({
+      durationSeconds,
+      title,
     });
     const fullText = mockSegments.map((segment) => segment.text).join(" ");
 
@@ -100,7 +164,7 @@ export async function generateMockTranscriptAction(
     const { data: existing } = await supabase
       .from("transcripts")
       .select("id")
-      .eq("source_file_id", file.id)
+      .eq("source_file_id", sourceFileId)
       .maybeSingle();
 
     let transcriptId = existing?.id;
@@ -128,9 +192,9 @@ export async function generateMockTranscriptAction(
       const { data: created, error: createError } = await supabase
         .from("transcripts")
         .insert({
-          user_id: user.id,
-          project_id: file.project_id,
-          source_file_id: file.id,
+          user_id: userId,
+          project_id: projectId,
+          source_file_id: sourceFileId,
           language: "en",
           full_text: fullText,
           status: "ready",
@@ -151,7 +215,7 @@ export async function generateMockTranscriptAction(
 
     const rows = mockSegments.map((segment) => ({
       transcript_id: transcriptId!,
-      user_id: user.id,
+      user_id: userId,
       start_time: segment.startTime,
       end_time: segment.endTime,
       speaker: segment.speaker,
@@ -177,9 +241,7 @@ export async function generateMockTranscriptAction(
       })
       .eq("id", jobId);
 
-    revalidatePath(`/projects/${file.project_id}`);
-    revalidatePath(`/projects/${file.project_id}/files/${file.id}`);
-    revalidatePath(`/projects/${file.project_id}/files/${file.id}/transcript`);
+    revalidateTranscriptPaths(projectId, sourceFileId);
 
     return {
       ok: true,
@@ -201,8 +263,32 @@ export async function generateMockTranscriptAction(
       })
       .eq("id", jobId);
 
+    revalidateTranscriptPaths(projectId, sourceFileId);
     return { ok: false, error: message };
   }
+}
+
+export async function generateMockTranscriptAction(
+  sourceFileId: string,
+  options?: { existingJobId?: string },
+): Promise<TranscriptActionResult> {
+  const queued = await enqueueMockTranscript(sourceFileId, options);
+  if (!queued.ok) return queued;
+
+  if (isAsyncMockVideoJobsEnabled()) {
+    after(() => {
+      void executeMockTranscript(queued.work);
+    });
+    return {
+      ok: true,
+      queued: true,
+      jobId: queued.work.jobId,
+      message:
+        "Transcript generation queued. Watch progress on the jobs list; open the transcript when ready.",
+    };
+  }
+
+  return executeMockTranscript(queued.work);
 }
 
 export async function updateTranscriptSegmentAction(input: {

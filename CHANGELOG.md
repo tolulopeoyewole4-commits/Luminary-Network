@@ -2,6 +2,15 @@
 
 All notable changes to Luminary AI are documented here.
 
+## [0.17.0] — Milestone 17
+
+### Added
+
+- Async mock video jobs via Next.js `after()` (flag `ASYNC_MOCK_VIDEO_JOBS`, default on).
+- `video_transcribe`, `clip_detect`, and `caption_generate` enqueue as `queued` and return immediately.
+- Generate/detect buttons show “Queuing…” and skip redirects until work finishes (sync path still redirects).
+- Flag unit coverage for async mock video jobs.
+
 ## [0.16.0] — Milestone 16
 
 ### Added

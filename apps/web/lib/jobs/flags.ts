@@ -19,3 +19,11 @@ export function isAsyncClipExportEnabled(): boolean {
 export function isAsyncDocumentExtractEnabled(): boolean {
   return envFlagEnabled("ASYNC_DOCUMENT_EXTRACT", true);
 }
+
+/**
+ * When true (default), mock video jobs (transcribe / clip detect / captions)
+ * continue after the server-action response.
+ */
+export function isAsyncMockVideoJobsEnabled(): boolean {
+  return envFlagEnabled("ASYNC_MOCK_VIDEO_JOBS", true);
+}

@@ -3,12 +3,14 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   isAsyncClipExportEnabled,
   isAsyncDocumentExtractEnabled,
+  isAsyncMockVideoJobsEnabled,
   isAsyncVideoJobsEnabled,
 } from "@/lib/jobs/flags";
 
 const ORIGINAL_VIDEO = process.env.ASYNC_VIDEO_JOBS;
 const ORIGINAL_EXPORT = process.env.ASYNC_CLIP_EXPORT;
 const ORIGINAL_DOCUMENT = process.env.ASYNC_DOCUMENT_EXTRACT;
+const ORIGINAL_MOCK = process.env.ASYNC_MOCK_VIDEO_JOBS;
 
 afterEach(() => {
   if (ORIGINAL_VIDEO === undefined) {
@@ -25,6 +27,11 @@ afterEach(() => {
     delete process.env.ASYNC_DOCUMENT_EXTRACT;
   } else {
     process.env.ASYNC_DOCUMENT_EXTRACT = ORIGINAL_DOCUMENT;
+  }
+  if (ORIGINAL_MOCK === undefined) {
+    delete process.env.ASYNC_MOCK_VIDEO_JOBS;
+  } else {
+    process.env.ASYNC_MOCK_VIDEO_JOBS = ORIGINAL_MOCK;
   }
 });
 
@@ -67,5 +74,19 @@ describe("isAsyncDocumentExtractEnabled", () => {
     expect(isAsyncDocumentExtractEnabled()).toBe(false);
     process.env.ASYNC_DOCUMENT_EXTRACT = "0";
     expect(isAsyncDocumentExtractEnabled()).toBe(false);
+  });
+});
+
+describe("isAsyncMockVideoJobsEnabled", () => {
+  it("defaults to enabled", () => {
+    delete process.env.ASYNC_MOCK_VIDEO_JOBS;
+    expect(isAsyncMockVideoJobsEnabled()).toBe(true);
+  });
+
+  it("can be disabled with falsey values", () => {
+    process.env.ASYNC_MOCK_VIDEO_JOBS = "false";
+    expect(isAsyncMockVideoJobsEnabled()).toBe(false);
+    process.env.ASYNC_MOCK_VIDEO_JOBS = "off";
+    expect(isAsyncMockVideoJobsEnabled()).toBe(false);
   });
 });

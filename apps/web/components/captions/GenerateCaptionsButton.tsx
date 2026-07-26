@@ -21,6 +21,7 @@ export function GenerateCaptionsButton({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
 
   return (
     <div className="space-y-2">
@@ -30,6 +31,7 @@ export function GenerateCaptionsButton({
         disabled={pending}
         onClick={() => {
           setError(null);
+          setMessage(null);
           startTransition(async () => {
             const result = await generateCaptionsAction(sourceFileId);
             if (!result.ok) {
@@ -37,7 +39,8 @@ export function GenerateCaptionsButton({
               router.refresh();
               return;
             }
-            if (redirectToEditor) {
+            setMessage(result.message);
+            if (redirectToEditor && !result.queued) {
               router.push(
                 `/projects/${projectId}/files/${sourceFileId}/captions`,
               );
@@ -46,9 +49,12 @@ export function GenerateCaptionsButton({
           });
         }}
       >
-        {pending ? "Generating…" : label}
+        {pending ? "Queuing…" : label}
       </button>
       {error ? <p className="text-sm text-red-700">{error}</p> : null}
+      {message ? (
+        <p className="text-sm text-[var(--accent-strong)]">{message}</p>
+      ) : null}
     </div>
   );
 }

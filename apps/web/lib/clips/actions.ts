@@ -1,9 +1,11 @@
 "use server";
 
+import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { buildMockClipCandidates } from "@/lib/clips/mock";
+import { isAsyncMockVideoJobsEnabled } from "@/lib/jobs/flags";
 import { createClient } from "@/lib/supabase/server";
 import { getTranscriptForSourceFile } from "@/lib/transcripts/queries";
 import { VIDEO_FILE_TYPES } from "@/lib/uploads/constants";
@@ -11,8 +13,23 @@ import { getOwnSourceFile } from "@/lib/uploads/queries";
 import type { ClipCandidateStatus, SourceFileType } from "@/types/database";
 
 export type ClipActionResult =
-  | { ok: true; message: string; jobId?: string; count?: number }
+  | {
+      ok: true;
+      message: string;
+      jobId?: string;
+      count?: number;
+      queued?: boolean;
+    }
   | { ok: false; error: string };
+
+type EnqueuedClipDetect = {
+  sourceFileId: string;
+  projectId: string;
+  jobId: string;
+  userId: string;
+  durationSeconds: number;
+  title: string;
+};
 
 async function requireUser() {
   const supabase = await createClient();
@@ -28,16 +45,20 @@ function isVideoType(fileType: SourceFileType): boolean {
 }
 
 function revalidateClipPaths(projectId: string, sourceFileId: string) {
+  revalidatePath("/dashboard");
   revalidatePath(`/projects/${projectId}`);
   revalidatePath(`/projects/${projectId}/files/${sourceFileId}`);
   revalidatePath(`/projects/${projectId}/files/${sourceFileId}/clips`);
   revalidatePath(`/projects/${projectId}/files/${sourceFileId}/transcript`);
 }
 
-export async function detectClipCandidatesAction(
+async function enqueueClipDetect(
   sourceFileId: string,
   options?: { existingJobId?: string },
-): Promise<ClipActionResult> {
+): Promise<
+  | { ok: true; work: EnqueuedClipDetect }
+  | { ok: false; error: string }
+> {
   const { supabase, user } = await requireUser();
   const { file, error } = await getOwnSourceFile(supabase, sourceFileId);
 
@@ -63,10 +84,10 @@ export async function detectClipCandidatesAction(
     await supabase
       .from("processing_jobs")
       .update({
-        status: "processing",
-        progress_percentage: 10,
+        status: "queued",
+        progress_percentage: 0,
         error_message: null,
-        started_at: new Date().toISOString(),
+        started_at: null,
         completed_at: null,
       })
       .eq("id", jobId);
@@ -78,9 +99,8 @@ export async function detectClipCandidatesAction(
         project_id: file.project_id,
         source_file_id: file.id,
         job_type: "clip_detect",
-        status: "processing",
-        progress_percentage: 10,
-        started_at: new Date().toISOString(),
+        status: "queued",
+        progress_percentage: 0,
       })
       .select("id")
       .single();
@@ -92,9 +112,50 @@ export async function detectClipCandidatesAction(
     jobId = job.id;
   }
 
+  revalidateClipPaths(file.project_id, file.id);
+
+  return {
+    ok: true,
+    work: {
+      sourceFileId: file.id,
+      projectId: file.project_id,
+      jobId,
+      userId: user.id,
+      durationSeconds: Number(file.video_duration_seconds ?? 60),
+      title: file.original_filename,
+    },
+  };
+}
+
+async function executeClipDetect(
+  work: EnqueuedClipDetect,
+): Promise<ClipActionResult> {
+  const supabase = await createClient();
+  const {
+    sourceFileId,
+    projectId,
+    jobId,
+    userId,
+    durationSeconds,
+    title,
+  } = work;
+
+  await supabase
+    .from("processing_jobs")
+    .update({
+      status: "processing",
+      progress_percentage: 10,
+      started_at: new Date().toISOString(),
+      error_message: null,
+      completed_at: null,
+    })
+    .eq("id", jobId);
+
   try {
-    const { transcript } = await getTranscriptForSourceFile(supabase, file.id);
-    const duration = file.video_duration_seconds ?? 60;
+    const { transcript } = await getTranscriptForSourceFile(
+      supabase,
+      sourceFileId,
+    );
 
     await supabase
       .from("processing_jobs")
@@ -102,8 +163,8 @@ export async function detectClipCandidatesAction(
       .eq("id", jobId);
 
     const mocks = buildMockClipCandidates({
-      durationSeconds: Number(duration),
-      title: file.original_filename,
+      durationSeconds,
+      title,
       segments: transcript?.segments.map((segment) => ({
         startTime: Number(segment.start_time),
         endTime: Number(segment.end_time),
@@ -116,7 +177,7 @@ export async function detectClipCandidatesAction(
     await supabase
       .from("clip_candidates")
       .delete()
-      .eq("source_file_id", file.id)
+      .eq("source_file_id", sourceFileId)
       .in("status", ["suggested", "rejected"]);
 
     await supabase
@@ -125,9 +186,9 @@ export async function detectClipCandidatesAction(
       .eq("id", jobId);
 
     const rows = mocks.map((clip) => ({
-      user_id: user.id,
-      project_id: file.project_id,
-      source_file_id: file.id,
+      user_id: userId,
+      project_id: projectId,
+      source_file_id: sourceFileId,
       transcript_id: transcript?.id ?? null,
       title: clip.title,
       reason: clip.reason,
@@ -156,7 +217,7 @@ export async function detectClipCandidatesAction(
       })
       .eq("id", jobId);
 
-    revalidateClipPaths(file.project_id, file.id);
+    revalidateClipPaths(projectId, sourceFileId);
 
     return {
       ok: true,
@@ -178,8 +239,32 @@ export async function detectClipCandidatesAction(
       })
       .eq("id", jobId);
 
+    revalidateClipPaths(projectId, sourceFileId);
     return { ok: false, error: message };
   }
+}
+
+export async function detectClipCandidatesAction(
+  sourceFileId: string,
+  options?: { existingJobId?: string },
+): Promise<ClipActionResult> {
+  const queued = await enqueueClipDetect(sourceFileId, options);
+  if (!queued.ok) return queued;
+
+  if (isAsyncMockVideoJobsEnabled()) {
+    after(() => {
+      void executeClipDetect(queued.work);
+    });
+    return {
+      ok: true,
+      queued: true,
+      jobId: queued.work.jobId,
+      message:
+        "Clip detection queued. Watch progress on the jobs list; open clip review when ready.",
+    };
+  }
+
+  return executeClipDetect(queued.work);
 }
 
 export async function updateClipCandidateAction(input: {

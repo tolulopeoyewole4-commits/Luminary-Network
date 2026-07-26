@@ -1,5 +1,6 @@
 "use server";
 
+import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -8,6 +9,7 @@ import {
   buildSrt,
   buildWebVtt,
 } from "@/lib/captions/format";
+import { isAsyncMockVideoJobsEnabled } from "@/lib/jobs/flags";
 import { createClient } from "@/lib/supabase/server";
 import { buildMockTranscriptSegments } from "@/lib/transcripts/mock";
 import { getTranscriptForSourceFile } from "@/lib/transcripts/queries";
@@ -24,8 +26,18 @@ export type CaptionActionResult =
       content?: string;
       filename?: string;
       mimeType?: string;
+      queued?: boolean;
     }
   | { ok: false; error: string };
+
+type EnqueuedCaptions = {
+  sourceFileId: string;
+  projectId: string;
+  jobId: string;
+  userId: string;
+  durationSeconds: number;
+  title: string;
+};
 
 async function requireUser() {
   const supabase = await createClient();
@@ -41,16 +53,20 @@ function isVideoType(fileType: SourceFileType): boolean {
 }
 
 function revalidateCaptionPaths(projectId: string, sourceFileId: string) {
+  revalidatePath("/dashboard");
   revalidatePath(`/projects/${projectId}`);
   revalidatePath(`/projects/${projectId}/files/${sourceFileId}`);
   revalidatePath(`/projects/${projectId}/files/${sourceFileId}/captions`);
   revalidatePath(`/projects/${projectId}/files/${sourceFileId}/transcript`);
 }
 
-export async function generateCaptionsAction(
+async function enqueueCaptionGenerate(
   sourceFileId: string,
   options?: { existingJobId?: string },
-): Promise<CaptionActionResult> {
+): Promise<
+  | { ok: true; work: EnqueuedCaptions }
+  | { ok: false; error: string }
+> {
   const { supabase, user } = await requireUser();
   const { file, error } = await getOwnSourceFile(supabase, sourceFileId);
 
@@ -76,10 +92,10 @@ export async function generateCaptionsAction(
     await supabase
       .from("processing_jobs")
       .update({
-        status: "processing",
-        progress_percentage: 10,
+        status: "queued",
+        progress_percentage: 0,
         error_message: null,
-        started_at: new Date().toISOString(),
+        started_at: null,
         completed_at: null,
       })
       .eq("id", jobId);
@@ -91,9 +107,8 @@ export async function generateCaptionsAction(
         project_id: file.project_id,
         source_file_id: file.id,
         job_type: "caption_generate",
-        status: "processing",
-        progress_percentage: 10,
-        started_at: new Date().toISOString(),
+        status: "queued",
+        progress_percentage: 0,
       })
       .select("id")
       .single();
@@ -105,9 +120,50 @@ export async function generateCaptionsAction(
     jobId = job.id;
   }
 
+  revalidateCaptionPaths(file.project_id, file.id);
+
+  return {
+    ok: true,
+    work: {
+      sourceFileId: file.id,
+      projectId: file.project_id,
+      jobId,
+      userId: user.id,
+      durationSeconds: Number(file.video_duration_seconds ?? 60),
+      title: file.original_filename,
+    },
+  };
+}
+
+async function executeCaptionGenerate(
+  work: EnqueuedCaptions,
+): Promise<CaptionActionResult> {
+  const supabase = await createClient();
+  const {
+    sourceFileId,
+    projectId,
+    jobId,
+    userId,
+    durationSeconds,
+    title,
+  } = work;
+
+  await supabase
+    .from("processing_jobs")
+    .update({
+      status: "processing",
+      progress_percentage: 10,
+      started_at: new Date().toISOString(),
+      error_message: null,
+      completed_at: null,
+    })
+    .eq("id", jobId);
+
   try {
-    const { transcript } = await getTranscriptForSourceFile(supabase, file.id);
-    const duration = Number(file.video_duration_seconds ?? 60);
+    const { transcript } = await getTranscriptForSourceFile(
+      supabase,
+      sourceFileId,
+    );
 
     await supabase
       .from("processing_jobs")
@@ -121,8 +177,8 @@ export async function generateCaptionsAction(
         text: segment.text,
       })) ??
       buildMockTranscriptSegments({
-        durationSeconds: duration,
-        title: file.original_filename,
+        durationSeconds,
+        title,
       }).map((segment) => ({
         startTime: segment.startTime,
         endTime: segment.endTime,
@@ -137,7 +193,7 @@ export async function generateCaptionsAction(
     const { data: existing } = await supabase
       .from("captions")
       .select("id")
-      .eq("source_file_id", file.id)
+      .eq("source_file_id", sourceFileId)
       .maybeSingle();
 
     let captionId = existing?.id;
@@ -158,9 +214,9 @@ export async function generateCaptionsAction(
       const { data: created, error: createError } = await supabase
         .from("captions")
         .insert({
-          user_id: user.id,
-          project_id: file.project_id,
-          source_file_id: file.id,
+          user_id: userId,
+          project_id: projectId,
+          source_file_id: sourceFileId,
           transcript_id: transcript?.id ?? null,
           language: transcript?.language ?? "en",
           status: "ready",
@@ -181,7 +237,7 @@ export async function generateCaptionsAction(
 
     const rows = cues.map((cue) => ({
       caption_id: captionId!,
-      user_id: user.id,
+      user_id: userId,
       start_time: cue.startTime,
       end_time: cue.endTime,
       text: cue.text,
@@ -200,7 +256,7 @@ export async function generateCaptionsAction(
       })
       .eq("id", jobId);
 
-    revalidateCaptionPaths(file.project_id, file.id);
+    revalidateCaptionPaths(projectId, sourceFileId);
 
     return {
       ok: true,
@@ -224,8 +280,32 @@ export async function generateCaptionsAction(
       })
       .eq("id", jobId);
 
+    revalidateCaptionPaths(projectId, sourceFileId);
     return { ok: false, error: message };
   }
+}
+
+export async function generateCaptionsAction(
+  sourceFileId: string,
+  options?: { existingJobId?: string },
+): Promise<CaptionActionResult> {
+  const queued = await enqueueCaptionGenerate(sourceFileId, options);
+  if (!queued.ok) return queued;
+
+  if (isAsyncMockVideoJobsEnabled()) {
+    after(() => {
+      void executeCaptionGenerate(queued.work);
+    });
+    return {
+      ok: true,
+      queued: true,
+      jobId: queued.work.jobId,
+      message:
+        "Caption generation queued. Watch progress on the jobs list; open captions when ready.",
+    };
+  }
+
+  return executeCaptionGenerate(queued.work);
 }
 
 export async function updateCaptionCueAction(input: {

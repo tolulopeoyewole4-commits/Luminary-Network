@@ -84,18 +84,20 @@ Browser
 7. The jobs UI auto-refreshes while status is `queued`/`processing`; failed jobs can be retried.
 8. Set `ASYNC_VIDEO_JOBS=false` to force synchronous metadata processing (useful for debugging).
 
-## Transcript viewer (Milestone 8)
+## Transcript viewer (Milestone 8 + 17)
 
-1. Creators open a video source and start a `video_transcribe` job.
-2. With no speech API configured, Next.js builds deterministic mock segments from duration/title.
-3. One `transcripts` row per source file stores language + full text; segments store start/end, speaker, text, confidence.
-4. The transcript page signs a short-lived URL for private video preview.
-5. UI supports search, speaker/text edits (persisted), and click-to-seek by timestamp.
-6. Failed transcription jobs can be retried from the jobs UI (reuses the job row).
+1. Creators open a video source and start a `video_transcribe` job (`queued`).
+2. With `ASYNC_MOCK_VIDEO_JOBS=true` (default), the server action returns immediately and continues via Next.js `after()`.
+3. With no speech API configured, Next.js builds deterministic mock segments from duration/title.
+4. One `transcripts` row per source file stores language + full text; segments store start/end, speaker, text, confidence.
+5. The transcript page signs a short-lived URL for private video preview.
+6. UI supports search, speaker/text edits (persisted), and click-to-seek by timestamp.
+7. Failed transcription jobs can be retried from the jobs UI (reuses the job row).
+8. Set `ASYNC_MOCK_VIDEO_JOBS=false` to force synchronous mock transcript/clip/caption jobs.
 
-## Clip candidate review (Milestone 9)
+## Clip candidate review (Milestone 9 + 17)
 
-1. Creators start a `clip_detect` job on a video source.
+1. Creators start a `clip_detect` job on a video source (`queued`, continues via `after()` when async mock jobs are enabled).
 2. Mock detector prefers transcript windows; otherwise uses evenly spaced duration slices.
 3. Candidates are stored in `clip_candidates` (`suggested` / `approved` / `rejected` / `exported`).
 4. Re-detection replaces suggested and rejected rows; approved/exported rows are kept.
@@ -113,9 +115,9 @@ Browser
 7. Downloads use short-lived signed URLs; the exports list auto-refreshes while processing; failed jobs can be retried.
 8. Set `ASYNC_CLIP_EXPORT=false` to force synchronous export (useful for debugging).
 
-## Captions (Milestone 11)
+## Captions (Milestone 11 + 17)
 
-1. Creators start a `caption_generate` job on a video source.
+1. Creators start a `caption_generate` job on a video source (`queued`, continues via `after()` when async mock jobs are enabled).
 2. Cues are built from transcript segments when present; otherwise from mock transcript windows.
 3. One `captions` row per source file stores language/status; `caption_cues` store start/end/text.
 4. The captions page signs a short-lived URL for private video preview and overlays a generated WebVTT track.

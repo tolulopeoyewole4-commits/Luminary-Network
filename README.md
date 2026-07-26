@@ -112,9 +112,9 @@ pnpm health:api
 
 ## Current milestone
 
-**Milestone 16 — Async document extract**
+**Milestone 17 — Async mock video jobs**
 
-Document extraction is enqueued and continues after the server-action response (`ASYNC_DOCUMENT_EXTRACT=true` by default), with live refresh on jobs/file lists. Video metadata and clip export async remain from Milestones 14–15.
+Mock transcript, clip detection, and caption jobs enqueue and continue after the server-action response (`ASYNC_MOCK_VIDEO_JOBS=true` by default). Document extract, video metadata, and clip export async remain from Milestones 14–16.
 
 - Release steps: [`docs/release-checklist.md`](docs/release-checklist.md)
 - Host setup: [`docs/deployment.md`](docs/deployment.md)
