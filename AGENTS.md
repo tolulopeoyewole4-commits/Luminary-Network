@@ -28,7 +28,7 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 
 ## Current milestone
 
-**Milestone 24 — Dedicated worker queue** (complete)
+**MVP on `main`** — Milestones 1–24 merged via [#25](https://github.com/tolulopeoyewole4-commits/Luminary-Network/pull/25). Remaining work is operator deploy (Supabase + API + web), not more milestone stack PRs.
 
 ## Completed milestones
 
@@ -69,5 +69,5 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 
 ## Next tasks
 
-- Operator cutover using `docs/release-checklist.md` (merge PRs #1→#24, apply SQL bundle including `0014`, deploy API + web).
-- Optional: move mock/AI jobs onto the worker; paid AI providers; real STT/caption providers.
+- **Deploy** using `docs/release-checklist.md` sections B–G (SQL through `0014`, API Docker, Vercel web, smoke). Code merge and draft-PR cleanup are done.
+- Optional product: move mock/AI jobs onto the worker; paid AI providers; real STT/caption providers.

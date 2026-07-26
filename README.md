@@ -116,15 +116,15 @@ pnpm health:api
 
 ---
 
-## Current milestone
+## Current status
 
-**Milestone 24 — Dedicated worker queue**
+**MVP code is on `main`** (Milestones 1–24). Next step is host cutover: Supabase SQL + API + Vercel.
 
-Optional FastAPI worker claims queued `document_extract` / `video_metadata` / `video_export` jobs when `DEDICATED_JOB_WORKER=true`. Default remains Next.js `after()` for local/dev without a worker process.
-
-- Release steps: [`docs/release-checklist.md`](docs/release-checklist.md)
+- Cutover steps: [`docs/release-checklist.md`](docs/release-checklist.md) (start at Supabase)
 - Host setup: [`docs/deployment.md`](docs/deployment.md)
 - SQL order / bundle: `pnpm sql:order` · `pnpm sql:bundle` → `database/dist/supabase_schema.sql`
+
+Optional: set `DEDICATED_JOB_WORKER=true` and run `pnpm worker` for heavy media jobs; default stays Next.js `after()`.
 
 ```bash
 # Production secrets (examples)
