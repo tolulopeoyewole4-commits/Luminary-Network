@@ -2,6 +2,15 @@
 
 All notable changes to Luminary AI are documented here.
 
+## [0.14.0] — Milestone 14
+
+### Added
+
+- Async video metadata processing via Next.js `after()` (flag `ASYNC_VIDEO_JOBS`, default on).
+- Server actions enqueue `video_metadata` jobs and return immediately; work continues after the response.
+- Processing jobs list auto-refreshes every 4s while jobs are queued/processing.
+- Unit coverage for the async jobs feature flag.
+
 ## [0.13.0] — Milestone 13
 
 ### Added

@@ -28,7 +28,7 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 
 ## Current milestone
 
-**Milestone 13 — Release readiness** (complete; cutover is operator-owned)
+**Milestone 14 — Async video metadata jobs** (complete)
 
 ## Completed milestones
 
@@ -46,11 +46,12 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 - **Milestone 11 — Captions**: `captions` / `caption_cues` + RLS, `caption_generate` jobs, cue editor with WebVTT preview, WebVTT/SRT download.
 - **Milestone 12 — Deployment**: Vercel/Fly/Render guidance, SQL apply order, GitHub Actions CI, production CORS/`ALLOWED_ORIGINS`, hardened API Docker image, deploy smoke scripts.
 - **Milestone 13 — Release readiness**: merge-train/release checklist, SQL bundle for one-shot Supabase apply, local smoke script, docs refresh.
+- **Milestone 14 — Async video metadata**: enqueue + `next/server` `after()` execution (`ASYNC_VIDEO_JOBS`), jobs list auto-refresh while queued/processing.
 
 ## Known issues
 
 - End-to-end flows require Supabase credentials, applied SQL, and a running FastAPI service with FFmpeg/ffprobe.
-- Large video metadata/export currently runs in a server action (UI stays usable via async client continuation); a dedicated worker queue can replace this later.
+- Clip export and some other heavy jobs still run inside the initiating server action; a dedicated worker queue can absorb those next.
 - Paid AI providers remain disabled until `AI_PROVIDER` is explicitly extended beyond `mock`.
 - Transcripts are mocked (no speech-to-text provider); replace `buildMockTranscriptSegments` when a real STT API is approved.
 - Clip detection is mocked (no scene/ASR ranking model); replace `buildMockClipCandidates` when a real detector is approved.
@@ -58,4 +59,4 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 ## Next tasks
 
 - Operator cutover using `docs/release-checklist.md` (merge PRs, apply SQL bundle, deploy API + web).
-- Optional product follow-ups: background worker queue; paid AI providers behind explicit flags; real STT/caption providers.
+- Optional: extend async/`after()` (or a worker) to clip export; paid AI providers; real STT/caption providers.

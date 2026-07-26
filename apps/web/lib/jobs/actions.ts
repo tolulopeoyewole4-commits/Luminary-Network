@@ -1,12 +1,14 @@
 "use server";
 
+import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { isAsyncVideoJobsEnabled } from "@/lib/jobs/flags";
 import { createClient } from "@/lib/supabase/server";
 import { SOURCE_STORAGE_BUCKET, VIDEO_FILE_TYPES } from "@/lib/uploads/constants";
 import { getOwnSourceFile } from "@/lib/uploads/queries";
-import type { SourceFileType } from "@/types/database";
+import type { SourceFile, SourceFileType } from "@/types/database";
 
 export type VideoJobResult =
   | { ok: true; message: string; jobId: string }
@@ -48,10 +50,13 @@ async function requireUser() {
   return { supabase, user };
 }
 
-async function runVideoMetadataJob(input: {
+async function enqueueVideoMetadataJob(input: {
   sourceFileId: string;
   existingJobId?: string;
-}): Promise<VideoJobResult> {
+}): Promise<
+  | { ok: true; jobId: string; file: SourceFile }
+  | { ok: false; error: string }
+> {
   const { supabase, user } = await requireUser();
   const { file, error } = await getOwnSourceFile(supabase, input.sourceFileId);
 
@@ -115,6 +120,25 @@ async function runVideoMetadataJob(input: {
       error_message: null,
     })
     .eq("id", file.id);
+
+  revalidatePath("/dashboard");
+  revalidatePath(`/projects/${file.project_id}`);
+  revalidatePath(`/projects/${file.project_id}/files/${file.id}`);
+
+  return { ok: true, jobId, file };
+}
+
+async function executeVideoMetadataJob(input: {
+  sourceFileId: string;
+  jobId: string;
+  projectId: string;
+}): Promise<VideoJobResult> {
+  const supabase = await createClient();
+  const { file, error } = await getOwnSourceFile(supabase, input.sourceFileId);
+  if (error) return { ok: false, error };
+  if (!file) return { ok: false, error: "File not found or inaccessible." };
+
+  const jobId = input.jobId;
 
   await supabase
     .from("processing_jobs")
@@ -199,8 +223,8 @@ async function runVideoMetadataJob(input: {
       .eq("id", jobId);
 
     revalidatePath("/dashboard");
-    revalidatePath(`/projects/${file.project_id}`);
-    revalidatePath(`/projects/${file.project_id}/files/${file.id}`);
+    revalidatePath(`/projects/${input.projectId}`);
+    revalidatePath(`/projects/${input.projectId}/files/${file.id}`);
 
     return {
       ok: true,
@@ -230,10 +254,38 @@ async function runVideoMetadataJob(input: {
       .eq("id", jobId);
 
     revalidatePath("/dashboard");
-    revalidatePath(`/projects/${file.project_id}`);
+    revalidatePath(`/projects/${input.projectId}`);
 
     return { ok: false, error: message };
   }
+}
+
+async function runVideoMetadataJob(input: {
+  sourceFileId: string;
+  existingJobId?: string;
+}): Promise<VideoJobResult> {
+  const queued = await enqueueVideoMetadataJob(input);
+  if (!queued.ok) return queued;
+
+  const work = {
+    sourceFileId: queued.file.id,
+    jobId: queued.jobId,
+    projectId: queued.file.project_id,
+  };
+
+  if (isAsyncVideoJobsEnabled()) {
+    after(() => {
+      void executeVideoMetadataJob(work);
+    });
+    return {
+      ok: true,
+      jobId: queued.jobId,
+      message:
+        "Video metadata processing queued. Progress updates on the dashboard and project jobs list.",
+    };
+  }
+
+  return executeVideoMetadataJob(work);
 }
 
 export async function processVideoAction(

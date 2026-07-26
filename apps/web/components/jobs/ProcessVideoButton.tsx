@@ -35,7 +35,7 @@ export function ProcessVideoButton({
           });
         }}
       >
-        {pending ? "Processing…" : label}
+        {pending ? "Queuing…" : label}
       </button>
       {error ? <p className="text-sm text-red-700">{error}</p> : null}
     </div>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 
 import { Alert } from "@/components/ui/Alert";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -38,6 +38,20 @@ export function ProcessingJobsList({
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
+
+  const hasActiveJobs = jobs.some(
+    (job) => job.status === "queued" || job.status === "processing",
+  );
+
+  useEffect(() => {
+    if (!hasActiveJobs) return;
+    const timer = window.setInterval(() => {
+      router.refresh();
+    }, 4000);
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [hasActiveJobs, router]);
 
   if (jobs.length === 0) {
     return (

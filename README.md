@@ -112,9 +112,9 @@ pnpm health:api
 
 ## Current milestone
 
-**Milestone 13 — Release readiness**
+**Milestone 14 — Async video metadata jobs**
 
-MVP feature work (M1–M12) is complete. This milestone packages cutover: merge-train checklist, one-shot SQL bundle, and local smoke gates.
+Video metadata processing is enqueued and continues after the server-action response (`ASYNC_VIDEO_JOBS=true` by default), with live job-list refresh. MVP cutover docs remain in Milestone 13.
 
 - Release steps: [`docs/release-checklist.md`](docs/release-checklist.md)
 - Host setup: [`docs/deployment.md`](docs/deployment.md)

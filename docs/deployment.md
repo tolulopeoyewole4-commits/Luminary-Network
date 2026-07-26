@@ -56,6 +56,7 @@ Alternatively deploy from the monorepo root with the root `vercel.json` helpers;
 | `API_URL` | yes | Same API origin for server actions (no trailing slash) |
 | `INTERNAL_API_TOKEN` | yes | Long random secret; must match API |
 | `AI_PROVIDER` | yes | `mock` for MVP |
+| `ASYNC_VIDEO_JOBS` | optional | default `true` (metadata via `after()`) |
 | `MAX_PROJECTS_PER_USER` | optional | default `10` |
 | `MAX_FILES_PER_PROJECT` | optional | default `25` |
 | `MAX_DOCUMENT_UPLOAD_MB` | optional | default `50` |
