@@ -27,13 +27,14 @@ describe("buildMockTranscriptSegments", () => {
     }
   });
 
-  it("always returns at least one segment for short clips", () => {
+  it("clamps very short durations and still returns segments", () => {
     const segments = buildMockTranscriptSegments({
       durationSeconds: 1,
       title: "short",
     });
-    expect(segments).toHaveLength(1);
-    expect(segments[0].endTime).toBeGreaterThan(0);
+    expect(segments.length).toBeGreaterThan(0);
+    expect(segments[0].startTime).toBe(0);
+    expect(segments.at(-1)?.endTime).toBeGreaterThanOrEqual(15);
   });
 });
 
