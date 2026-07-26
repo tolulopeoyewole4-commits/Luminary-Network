@@ -2,6 +2,17 @@
 
 All notable changes to Luminary AI are documented here.
 
+## [0.4.0] — Milestone 4
+
+### Added
+
+- `document_sections` and `processing_jobs` migrations with RLS.
+- FastAPI `/api/v1/documents/extract` endpoint (internal-token protected).
+- PDF (PyMuPDF), DOCX, and TXT extraction with heading/section detection.
+- Page-aware section storage and document viewer UI.
+- Process/re-extract actions with visible success and failure states.
+- Extraction unit/API tests.
+
 ## [0.3.0] — Milestone 3
 
 ### Added

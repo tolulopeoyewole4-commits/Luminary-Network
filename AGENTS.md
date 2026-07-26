@@ -28,7 +28,7 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 
 ## Current milestone
 
-**Milestone 3 — Private File Upload** (complete; requires Supabase migrations + storage policies)
+**Milestone 4 — PDF and Document Processing** (complete; requires API + Supabase migrations)
 
 ## Completed milestones
 
@@ -36,15 +36,15 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 - **Milestone 1 — Authentication and Protected Dashboard**: monorepo scaffold, Supabase auth pages, protected dashboard/settings, profiles migration + RLS, FastAPI health endpoint, tests.
 - **Milestone 2 — Project Management**: projects table + RLS, create/list/overview/edit/archive/delete UI, dashboard project summary, validation tests.
 - **Milestone 3 — Private File Upload**: `source_files` + private `source-files` bucket, typed uploads with progress, signed downloads, delete, validation tests.
+- **Milestone 4 — Document Processing**: PyMuPDF/DOCX/TXT extraction API, `document_sections` + `processing_jobs`, document viewer with page references.
 
 ## Known issues
 
-- End-to-end auth/upload against a live Supabase project requires project credentials in `apps/web/.env.local` and applied SQL migrations/policies.
-- Email verification behaviour depends on Supabase Auth settings.
-- FastAPI is still a health/stub service; uploads use Next.js server actions + Supabase Storage RLS.
-- Document extraction / processing starts in Milestone 4 (`processing_status` is prepared).
+- End-to-end flows require Supabase credentials, applied SQL, and a running FastAPI service (`INTERNAL_API_TOKEN` shared with Next.js).
+- Scanned/image-only PDFs fail with a clear error; OCR is intentionally deferred.
+- Video transcription remains a later milestone.
 
 ## Next tasks
 
-- Milestone 4: PDF and document processing.
 - Milestone 5: course outline generator (mocked AI).
+- Milestone 6: social content generator (mocked AI).

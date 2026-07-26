@@ -74,6 +74,8 @@ In the Supabase SQL editor, run in order:
 5. `database/migrations/0003_source_files.sql`
 6. `database/policies/0003_source_files_rls.sql`
 7. `database/policies/0003_source_files_storage.sql`
+8. `database/migrations/0004_document_sections.sql`
+9. `database/policies/0004_document_sections_rls.sql`
 
 Enable email auth in Supabase Authentication settings. For local development you may disable email confirmation temporarily.
 
@@ -106,9 +108,17 @@ pnpm dev:api
 
 ## Current milestone
 
-**Milestone 3 — Private File Upload**
+**Milestone 4 — PDF and Document Processing**
 
-Secure private uploads (PDF, DOCX, TXT, MP4, MOV) attached to projects, with signed downloads and ownership RLS on metadata and storage.
+Extract text from private PDF/DOCX/TXT uploads into page-aware sections, track processing jobs, and review results in the document viewer.
+
+Document extraction requires the API:
+
+```bash
+# apps/web/.env.local and apps/api/.env
+INTERNAL_API_TOKEN=dev-internal-token
+API_URL=http://localhost:8000
+```
 
 ---
 

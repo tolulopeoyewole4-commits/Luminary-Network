@@ -116,7 +116,7 @@ export default async function ProjectOverviewPage({ params }: ProjectPageProps) 
           <h2 className="font-display text-2xl font-semibold">Source library</h2>
         </div>
         {filesError ? <Alert tone="error">{filesError}</Alert> : null}
-        <SourceFileList files={files} />
+        <SourceFileList files={files} projectId={project.id} />
       </section>
 
       <ProjectDangerZone projectId={project.id} status={project.status} />

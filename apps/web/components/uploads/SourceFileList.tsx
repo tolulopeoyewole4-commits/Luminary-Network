@@ -1,10 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
+import { ProcessDocumentButton } from "@/components/documents/ProcessDocumentButton";
 import { Alert } from "@/components/ui/Alert";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { isDocumentProcessableType } from "@/lib/documents/constants";
 import {
   createSourceFileSignedUrlAction,
   deleteSourceFileAction,
@@ -27,9 +30,10 @@ const STATUS_STYLES: Record<SourceProcessingStatus, string> = {
 
 type SourceFileListProps = {
   files: SourceFile[];
+  projectId: string;
 };
 
-export function SourceFileList({ files }: SourceFileListProps) {
+export function SourceFileList({ files, projectId }: SourceFileListProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -83,9 +87,10 @@ export function SourceFileList({ files }: SourceFileListProps) {
       <ul className="space-y-3">
         {files.map((file) => {
           const busy = pending && activeId === file.id;
+          const canProcess = isDocumentProcessableType(file.file_type);
           return (
             <li key={file.id} className="surface-card px-5 py-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                 <div className="min-w-0">
                   <p className="truncate font-semibold text-foreground">
                     {file.original_filename}
@@ -93,6 +98,7 @@ export function SourceFileList({ files }: SourceFileListProps) {
                   <p className="mt-1 text-sm text-muted">
                     {SOURCE_FILE_TYPE_LABELS[file.file_type as SourceFileType]} ·{" "}
                     {formatBytes(file.file_size)}
+                    {file.page_count ? ` · ${file.page_count} pages` : ""}
                   </p>
                   {file.error_message ? (
                     <p className="mt-2 text-sm text-red-700">{file.error_message}</p>
@@ -104,6 +110,28 @@ export function SourceFileList({ files }: SourceFileListProps) {
                   >
                     {file.processing_status}
                   </span>
+                  <Link
+                    href={`/projects/${projectId}/files/${file.id}`}
+                    className="btn-secondary"
+                  >
+                    {file.processing_status === "ready"
+                      ? "View extract"
+                      : "Open"}
+                  </Link>
+                  {canProcess &&
+                  file.processing_status !== "uploading" &&
+                  file.processing_status !== "processing" ? (
+                    <ProcessDocumentButton
+                      sourceFileId={file.id}
+                      projectId={projectId}
+                      label={
+                        file.processing_status === "ready" ||
+                        file.processing_status === "failed"
+                          ? "Re-extract"
+                          : "Extract text"
+                      }
+                    />
+                  ) : null}
                   <button
                     type="button"
                     className="btn-secondary"

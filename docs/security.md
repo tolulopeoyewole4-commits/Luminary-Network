@@ -34,9 +34,10 @@
 
 ## API security (expanding in later milestones)
 
-- Validate Supabase access tokens.
+- Validate Supabase access tokens for user-facing data access in Next.js.
 - Re-check ownership before processing files.
-- Rate-limit sensitive endpoints.
+- Document extraction endpoint requires `X-Internal-Token` (server-only); not callable anonymously from the browser.
+- Rate-limit sensitive endpoints (basic file/project quotas exist; broader rate limits later).
 - Never log secrets or full document content.
 
 ## AI avatar (future)

@@ -58,6 +58,46 @@ export type SourceFile = {
   updated_at: string;
 };
 
+export type DocumentSection = {
+  id: string;
+  source_file_id: string;
+  user_id: string;
+  section_title: string;
+  section_number: number;
+  page_start: number | null;
+  page_end: number | null;
+  extracted_text: string;
+  token_count: number;
+  created_at: string;
+};
+
+export type ProcessingJobType =
+  | "document_extract"
+  | "video_transcribe"
+  | "clip_detect"
+  | "video_export";
+
+export type ProcessingJobStatus =
+  | "queued"
+  | "processing"
+  | "completed"
+  | "failed";
+
+export type ProcessingJob = {
+  id: string;
+  user_id: string;
+  project_id: string;
+  source_file_id: string | null;
+  job_type: ProcessingJobType;
+  status: ProcessingJobStatus;
+  progress_percentage: number;
+  error_message: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -143,6 +183,55 @@ export type Database = {
         };
         Relationships: [];
       };
+      document_sections: {
+        Row: DocumentSection;
+        Insert: {
+          id?: string;
+          source_file_id: string;
+          user_id: string;
+          section_title: string;
+          section_number: number;
+          page_start?: number | null;
+          page_end?: number | null;
+          extracted_text?: string;
+          token_count?: number;
+          created_at?: string;
+        };
+        Update: {
+          section_title?: string;
+          section_number?: number;
+          page_start?: number | null;
+          page_end?: number | null;
+          extracted_text?: string;
+          token_count?: number;
+        };
+        Relationships: [];
+      };
+      processing_jobs: {
+        Row: ProcessingJob;
+        Insert: {
+          id?: string;
+          user_id: string;
+          project_id: string;
+          source_file_id?: string | null;
+          job_type: ProcessingJobType;
+          status?: ProcessingJobStatus;
+          progress_percentage?: number;
+          error_message?: string | null;
+          started_at?: string | null;
+          completed_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          status?: ProcessingJobStatus;
+          progress_percentage?: number;
+          error_message?: string | null;
+          started_at?: string | null;
+          completed_at?: string | null;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -151,6 +240,8 @@ export type Database = {
       project_status: ProjectStatus;
       source_file_type: SourceFileType;
       source_processing_status: SourceProcessingStatus;
+      processing_job_type: ProcessingJobType;
+      processing_job_status: ProcessingJobStatus;
     };
     CompositeTypes: Record<string, never>;
   };

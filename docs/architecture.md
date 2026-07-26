@@ -48,6 +48,14 @@ Browser
 4. Server verifies the object exists and marks the row `uploaded`.
 5. Downloads go through `createSignedUrl` (short expiry); public URLs are never used.
 
+## Document processing (Milestone 4)
+
+1. Authenticated Next.js server action downloads the private object with the user session.
+2. Bytes are posted to FastAPI `/api/v1/documents/extract` using `INTERNAL_API_TOKEN`.
+3. FastAPI extracts text (PyMuPDF / python-docx / plain text), detects headings, and returns sections with page ranges.
+4. Next.js replaces `document_sections` for that file and updates `processing_jobs` + `source_files.processing_status`.
+5. The document viewer lets creators review section text and source page references.
+
 ## Storage
 
 - Private Supabase Storage bucket: `source-files`.
