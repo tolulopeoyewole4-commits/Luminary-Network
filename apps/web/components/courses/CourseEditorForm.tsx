@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useActionState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
+import { DownloadCourseButton } from "@/components/courses/DownloadCourseButton";
 import { SourceReferenceList } from "@/components/courses/SourceReferenceList";
 import { Alert } from "@/components/ui/Alert";
 import {
@@ -263,10 +264,11 @@ export function CourseEditorForm({ course }: CourseEditorFormProps) {
         </section>
       ))}
 
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap items-start gap-3">
         <button type="submit" className="btn-primary" disabled={pending}>
           {pending ? "Saving…" : "Save changes"}
         </button>
+        <DownloadCourseButton courseId={course.id} />
         <Link href={`/projects/${course.project_id}`} className="btn-secondary">
           Back to project
         </Link>

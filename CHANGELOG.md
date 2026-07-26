@@ -2,6 +2,14 @@
 
 All notable changes to Luminary AI are documented here.
 
+## [0.21.0] — Milestone 21
+
+### Added
+
+- Download course outlines as Markdown from the course editor.
+- Download social/content items as Markdown or plain text for pasting into platforms.
+- Pure export formatters with unit coverage.
+
 ## [0.20.0] — Milestone 20
 
 ### Added

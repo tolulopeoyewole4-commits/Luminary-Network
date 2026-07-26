@@ -28,7 +28,7 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 
 ## Current milestone
 
-**Milestone 20 — Cancel processing jobs** (complete)
+**Milestone 21 — Markdown/text exports** (complete)
 
 ## Completed milestones
 
@@ -53,6 +53,7 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 - **Milestone 18 — Async AI generation**: enqueue `course_generate` / `social_generate` via `after()` (`ASYNC_AI_GENERATION`), store retry payload on jobs.
 - **Milestone 19 — Job result links**: jobs list deep-links to completed outputs; generator pages show live AI job status.
 - **Milestone 20 — Cancel processing jobs**: cancel queued/processing jobs; cooperative in-flight guards; retry cancelled jobs.
+- **Milestone 21 — Markdown/text exports**: download courses as Markdown; download social content as Markdown or plain text.
 
 ## Known issues
 
@@ -65,5 +66,5 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 
 ## Next tasks
 
-- Operator cutover using `docs/release-checklist.md` (merge PRs #1→#20, apply SQL bundle including `0013`, deploy API + web).
+- Operator cutover using `docs/release-checklist.md` (merge PRs #1→#21, apply SQL bundle including `0013`, deploy API + web).
 - Optional: dedicated worker queue; paid AI providers; real STT/caption providers.

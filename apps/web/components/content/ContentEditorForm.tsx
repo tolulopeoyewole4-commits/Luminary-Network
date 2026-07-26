@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useActionState, useTransition } from "react";
 
+import { DownloadContentButton } from "@/components/content/DownloadContentButton";
 import { SourceReferenceList } from "@/components/courses/SourceReferenceList";
 import { Alert } from "@/components/ui/Alert";
 import {
@@ -148,10 +149,12 @@ export function ContentEditorForm({ item }: ContentEditorFormProps) {
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap items-start gap-3">
         <button type="submit" className="btn-primary" disabled={pending}>
           {pending ? "Saving…" : "Save changes"}
         </button>
+        <DownloadContentButton contentId={item.id} format="md" />
+        <DownloadContentButton contentId={item.id} format="txt" />
         <Link href={`/projects/${item.project_id}`} className="btn-secondary">
           Back to project
         </Link>

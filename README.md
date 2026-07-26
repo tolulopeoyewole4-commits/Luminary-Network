@@ -112,9 +112,9 @@ pnpm health:api
 
 ## Current milestone
 
-**Milestone 20 — Cancel processing jobs**
+**Milestone 21 — Markdown/text exports**
 
-Creators can cancel queued/processing jobs from the jobs list. In-flight workers cooperatively stop writing results after cancel; cancelled jobs can be retried.
+Download course outlines as Markdown, and social/content items as Markdown or plain text, for editing or publishing outside Luminary.
 
 - Release steps: [`docs/release-checklist.md`](docs/release-checklist.md)
 - Host setup: [`docs/deployment.md`](docs/deployment.md)
