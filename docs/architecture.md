@@ -56,6 +56,13 @@ Browser
 4. Next.js replaces `document_sections` for that file and updates `processing_jobs` + `source_files.processing_status`.
 5. The document viewer lets creators review section text and source page references.
 
+## Course generation (Milestone 5)
+
+1. Creator selects a processed document and one or more sections.
+2. Server action loads only those owned sections and calls `getAIProvider()`.
+3. Mock provider builds a structured outline from section text (no external claims).
+4. Outline is validated, saved to `courses` / `course_modules` / `course_lessons`, and opened for editing.
+
 ## Storage
 
 - Private Supabase Storage bucket: `source-files`.
@@ -65,9 +72,10 @@ Browser
 
 ## AI layer
 
-- Provider interface with a mock implementation for development.
-- Browser never calls AI providers directly.
+- Provider interface (`AIProvider`) with a mock implementation for development.
+- Browser never calls AI providers directly; generation runs in Next.js server actions.
 - Feature flag: `AI_PROVIDER=mock`.
+- Course outlines are validated with Zod and always include source section references.
 
 ## Deployment
 

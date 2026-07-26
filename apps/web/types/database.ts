@@ -98,6 +98,61 @@ export type ProcessingJob = {
   updated_at: string;
 };
 
+export type CourseDifficulty = "beginner" | "intermediate" | "advanced";
+export type CourseStatus = "draft" | "ready" | "archived";
+
+export type CourseSourceReference = {
+  sectionId: string;
+  sectionTitle: string;
+  sectionNumber: number;
+  pageStart: number | null;
+  pageEnd: number | null;
+};
+
+export type Course = {
+  id: string;
+  user_id: string;
+  project_id: string;
+  source_file_id: string | null;
+  title: string;
+  description: string | null;
+  target_audience: string | null;
+  course_objective: string | null;
+  duration_label: string | null;
+  difficulty_level: CourseDifficulty;
+  learning_outcomes: string[];
+  quiz_suggestions: string[];
+  source_references: CourseSourceReference[];
+  status: CourseStatus;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CourseModule = {
+  id: string;
+  user_id: string;
+  course_id: string;
+  title: string;
+  description: string | null;
+  position: number;
+  source_references: CourseSourceReference[];
+  created_at: string;
+  updated_at: string;
+};
+
+export type CourseLesson = {
+  id: string;
+  user_id: string;
+  module_id: string;
+  title: string;
+  learning_objectives: string[];
+  lesson_content: string;
+  position: number;
+  source_references: CourseSourceReference[];
+  created_at: string;
+  updated_at: string;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -232,6 +287,84 @@ export type Database = {
         };
         Relationships: [];
       };
+      courses: {
+        Row: Course;
+        Insert: {
+          id?: string;
+          user_id: string;
+          project_id: string;
+          source_file_id?: string | null;
+          title: string;
+          description?: string | null;
+          target_audience?: string | null;
+          course_objective?: string | null;
+          duration_label?: string | null;
+          difficulty_level?: CourseDifficulty;
+          learning_outcomes?: string[];
+          quiz_suggestions?: string[];
+          source_references?: CourseSourceReference[];
+          status?: CourseStatus;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          title?: string;
+          description?: string | null;
+          target_audience?: string | null;
+          course_objective?: string | null;
+          duration_label?: string | null;
+          difficulty_level?: CourseDifficulty;
+          learning_outcomes?: string[];
+          quiz_suggestions?: string[];
+          source_references?: CourseSourceReference[];
+          status?: CourseStatus;
+        };
+        Relationships: [];
+      };
+      course_modules: {
+        Row: CourseModule;
+        Insert: {
+          id?: string;
+          user_id: string;
+          course_id: string;
+          title: string;
+          description?: string | null;
+          position: number;
+          source_references?: CourseSourceReference[];
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          title?: string;
+          description?: string | null;
+          position?: number;
+          source_references?: CourseSourceReference[];
+        };
+        Relationships: [];
+      };
+      course_lessons: {
+        Row: CourseLesson;
+        Insert: {
+          id?: string;
+          user_id: string;
+          module_id: string;
+          title: string;
+          learning_objectives?: string[];
+          lesson_content?: string;
+          position: number;
+          source_references?: CourseSourceReference[];
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          title?: string;
+          learning_objectives?: string[];
+          lesson_content?: string;
+          position?: number;
+          source_references?: CourseSourceReference[];
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -242,6 +375,8 @@ export type Database = {
       source_processing_status: SourceProcessingStatus;
       processing_job_type: ProcessingJobType;
       processing_job_status: ProcessingJobStatus;
+      course_difficulty: CourseDifficulty;
+      course_status: CourseStatus;
     };
     CompositeTypes: Record<string, never>;
   };

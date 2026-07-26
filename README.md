@@ -76,6 +76,8 @@ In the Supabase SQL editor, run in order:
 7. `database/policies/0003_source_files_storage.sql`
 8. `database/migrations/0004_document_sections.sql`
 9. `database/policies/0004_document_sections_rls.sql`
+10. `database/migrations/0005_courses.sql`
+11. `database/policies/0005_courses_rls.sql`
 
 Enable email auth in Supabase Authentication settings. For local development you may disable email confirmation temporarily.
 
@@ -108,16 +110,17 @@ pnpm dev:api
 
 ## Current milestone
 
-**Milestone 4 — PDF and Document Processing**
+**Milestone 5 — Course Outline Generator**
 
-Extract text from private PDF/DOCX/TXT uploads into page-aware sections, track processing jobs, and review results in the document viewer.
+Generate editable, source-grounded course outlines from selected document sections using the mock AI provider (`AI_PROVIDER=mock`).
 
-Document extraction requires the API:
+Document extraction still requires the API:
 
 ```bash
 # apps/web/.env.local and apps/api/.env
 INTERNAL_API_TOKEN=dev-internal-token
 API_URL=http://localhost:8000
+AI_PROVIDER=mock
 ```
 
 ---

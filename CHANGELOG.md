@@ -2,6 +2,17 @@
 
 All notable changes to Luminary AI are documented here.
 
+## [0.5.0] — Milestone 5
+
+### Added
+
+- `courses`, `course_modules`, and `course_lessons` migrations with RLS.
+- AI provider interface with mock course-outline generator.
+- Zod schemas and separate prompt module for course generation.
+- Course generator UI (source/section selection + teaching controls).
+- Editable course outline viewer/editor with source references.
+- Generator and mock-provider tests.
+
 ## [0.4.0] — Milestone 4
 
 ### Added

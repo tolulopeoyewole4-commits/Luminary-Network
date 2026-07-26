@@ -2,12 +2,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
+import { CourseList } from "@/components/courses/CourseList";
 import { ProjectDangerZone } from "@/components/projects/ProjectDangerZone";
 import { ProjectStatusBadge } from "@/components/projects/ProjectStatusBadge";
 import { ProjectTypeBadge } from "@/components/projects/ProjectTypeBadge";
 import { Alert } from "@/components/ui/Alert";
 import { SourceFileList } from "@/components/uploads/SourceFileList";
 import { SourceUploadForm } from "@/components/uploads/SourceUploadForm";
+import { listProjectCourses } from "@/lib/courses/queries";
 import { getOwnProject } from "@/lib/projects/queries";
 import { createClient } from "@/lib/supabase/server";
 import { listProjectSourceFiles } from "@/lib/uploads/queries";
@@ -40,10 +42,11 @@ export default async function ProjectOverviewPage({ params }: ProjectPageProps) 
     notFound();
   }
 
-  const { files, error: filesError } = await listProjectSourceFiles(
-    supabase,
-    project.id,
-  );
+  const [{ files, error: filesError }, { courses, error: coursesError }] =
+    await Promise.all([
+      listProjectSourceFiles(supabase, project.id),
+      listProjectCourses(supabase, project.id),
+    ]);
 
   const created = new Intl.DateTimeFormat("en", {
     dateStyle: "medium",
@@ -117,6 +120,20 @@ export default async function ProjectOverviewPage({ params }: ProjectPageProps) 
         </div>
         {filesError ? <Alert tone="error">{filesError}</Alert> : null}
         <SourceFileList files={files} projectId={project.id} />
+      </section>
+
+      <section className="space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="font-display text-2xl font-semibold">Courses</h2>
+          <Link
+            href={`/projects/${project.id}/courses/new`}
+            className="btn-primary"
+          >
+            Generate course
+          </Link>
+        </div>
+        {coursesError ? <Alert tone="error">{coursesError}</Alert> : null}
+        <CourseList projectId={project.id} courses={courses} />
       </section>
 
       <ProjectDangerZone projectId={project.id} status={project.status} />

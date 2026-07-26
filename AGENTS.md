@@ -28,7 +28,7 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 
 ## Current milestone
 
-**Milestone 4 — PDF and Document Processing** (complete; requires API + Supabase migrations)
+**Milestone 5 — Course Outline Generator** (complete; mock AI only)
 
 ## Completed milestones
 
@@ -37,14 +37,15 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 - **Milestone 2 — Project Management**: projects table + RLS, create/list/overview/edit/archive/delete UI, dashboard project summary, validation tests.
 - **Milestone 3 — Private File Upload**: `source_files` + private `source-files` bucket, typed uploads with progress, signed downloads, delete, validation tests.
 - **Milestone 4 — Document Processing**: PyMuPDF/DOCX/TXT extraction API, `document_sections` + `processing_jobs`, document viewer with page references.
+- **Milestone 5 — Course Outline Generator**: AI provider abstraction + mock, courses/modules/lessons with source references, editable save flow.
 
 ## Known issues
 
-- End-to-end flows require Supabase credentials, applied SQL, and a running FastAPI service (`INTERNAL_API_TOKEN` shared with Next.js).
+- End-to-end flows require Supabase credentials, applied SQL, and a running FastAPI service for document extraction.
+- Paid AI providers remain disabled until `AI_PROVIDER` is explicitly extended beyond `mock`.
 - Scanned/image-only PDFs fail with a clear error; OCR is intentionally deferred.
-- Video transcription remains a later milestone.
 
 ## Next tasks
 
-- Milestone 5: course outline generator (mocked AI).
 - Milestone 6: social content generator (mocked AI).
+- Milestone 7: video upload and processing jobs.
