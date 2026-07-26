@@ -1,4 +1,5 @@
 import { buildCourseOutlinePrompt } from "@/lib/ai/prompts/course-outline";
+import { buildSocialContentPrompt } from "@/lib/ai/prompts/social-content";
 import {
   courseOutlineSchema,
   type CourseGenerationInput,
@@ -6,6 +7,14 @@ import {
   type CourseOutline,
   type SourceReference,
 } from "@/lib/ai/schemas/course";
+import {
+  generatedSocialContentSchema,
+  platformToContentType,
+  type GeneratedSocialContent,
+  type SocialGenerationInput,
+  type SocialLength,
+  type SocialPlatform,
+} from "@/lib/ai/schemas/social";
 import type { AIProvider } from "@/lib/ai/providers/types";
 
 function toReference(section: CourseGenerationSection): SourceReference {
@@ -145,4 +154,149 @@ export class MockAIProvider implements AIProvider {
 
     return courseOutlineSchema.parse(outline);
   }
+
+  async generateSocialContent(
+    input: SocialGenerationInput,
+  ): Promise<GeneratedSocialContent[]> {
+    void buildSocialContentPrompt(input);
+
+    if (input.sections.length === 0) {
+      throw new Error("Select at least one source section before generating.");
+    }
+
+    const count = Math.max(1, Math.min(input.outputCount, 5));
+    const outputs: GeneratedSocialContent[] = [];
+
+    for (let index = 0; index < count; index += 1) {
+      const section = input.sections[index % input.sections.length];
+      const idea = firstSentence(
+        section.extractedText,
+        `Key idea from ${section.sectionTitle}`,
+      );
+      const body = buildMockSocialBody({
+        platform: input.platform,
+        tone: input.tone,
+        length: input.length,
+        targetAudience: input.targetAudience,
+        callToAction: input.callToAction,
+        sectionTitle: section.sectionTitle,
+        idea,
+        variant: index + 1,
+      });
+
+      outputs.push(
+        generatedSocialContentSchema.parse({
+          contentType: platformToContentType[input.platform],
+          platform: input.platform,
+          title: `${labelPlatform(input.platform)} from ${section.sectionTitle} (#${index + 1})`,
+          body,
+          sourceReferences: [toReference(section)],
+        }),
+      );
+    }
+
+    return outputs;
+  }
 }
+
+function labelPlatform(platform: SocialPlatform): string {
+  switch (platform) {
+    case "linkedin":
+      return "LinkedIn post";
+    case "instagram":
+      return "Instagram caption";
+    case "x":
+      return "X thread";
+    case "youtube":
+      return "YouTube script";
+    case "tiktok":
+      return "TikTok / Reel script";
+    case "newsletter":
+      return "Newsletter";
+    case "blog":
+      return "Blog outline";
+    default:
+      return "Content";
+  }
+}
+
+function lengthBudget(length: SocialLength): number {
+  if (length === "short") return 280;
+  if (length === "long") return 1200;
+  return 600;
+}
+
+function buildMockSocialBody(input: {
+  platform: SocialPlatform;
+  tone: string;
+  length: SocialLength;
+  targetAudience: string;
+  callToAction: string;
+  sectionTitle: string;
+  idea: string;
+  variant: number;
+}): string {
+  const budget = lengthBudget(input.length);
+  const opener = `${input.idea}`;
+
+  if (input.platform === "x") {
+    const tweets = [
+      `1/${Math.min(3, input.variant + 2)} For ${input.targetAudience}: ${opener}`,
+      `2/ Grounded in “${input.sectionTitle}”. Tone: ${input.tone}.`,
+      `3/ ${input.callToAction}`,
+    ];
+    return tweets.join("\n\n").slice(0, budget + 120);
+  }
+
+  if (input.platform === "youtube" || input.platform === "tiktok") {
+    return [
+      `HOOK: ${opener}`,
+      `CONTEXT: This script is grounded in “${input.sectionTitle}”.`,
+      `BODY: Speak to ${input.targetAudience} in a ${input.tone} voice. Stay faithful to the source idea above — do not invent extra claims.`,
+      `CTA: ${input.callToAction}`,
+    ]
+      .join("\n\n")
+      .slice(0, budget + 200);
+  }
+
+  if (input.platform === "blog") {
+    return [
+      `Outline (variant ${input.variant})`,
+      `1. Introduction — ${opener}`,
+      `2. Core teaching from “${input.sectionTitle}”`,
+      `3. Practical application for ${input.targetAudience}`,
+      `4. Closing CTA — ${input.callToAction}`,
+      ``,
+      `Notes: Keep every claim traceable to the selected source section.`,
+    ].join("\n");
+  }
+
+  if (input.platform === "newsletter") {
+    return [
+      `Subject angle: ${input.sectionTitle}`,
+      ``,
+      `Hello ${input.targetAudience},`,
+      ``,
+      opener,
+      ``,
+      `This edition stays close to the source material in “${input.sectionTitle}”.`,
+      ``,
+      input.callToAction,
+    ]
+      .join("\n")
+      .slice(0, budget + 200);
+  }
+
+  // LinkedIn / Instagram default
+  return [
+    opener,
+    ``,
+    `Drawn from “${input.sectionTitle}” for ${input.targetAudience}.`,
+    `Voice: ${input.tone}.`,
+    ``,
+    input.callToAction,
+  ]
+    .join("\n")
+    .slice(0, budget + 80);
+}
+

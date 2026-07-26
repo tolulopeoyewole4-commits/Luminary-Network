@@ -63,6 +63,13 @@ Browser
 3. Mock provider builds a structured outline from section text (no external claims).
 4. Outline is validated, saved to `courses` / `course_modules` / `course_lessons`, and opened for editing.
 
+## Social content generation (Milestone 6)
+
+1. Creator selects processed sections and platform controls.
+2. Server action calls `AIProvider.generateSocialContent()` (mock in MVP).
+3. Outputs are Zod-validated, include source references, and are stored in `generated_content`.
+4. Creators can edit, duplicate, and archive items in the project content library.
+
 ## Storage
 
 - Private Supabase Storage bucket: `source-files`.

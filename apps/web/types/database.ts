@@ -153,6 +153,48 @@ export type CourseLesson = {
   updated_at: string;
 };
 
+export type GeneratedContentType =
+  | "linkedin_post"
+  | "instagram_caption"
+  | "x_thread"
+  | "youtube_script"
+  | "tiktok_script"
+  | "newsletter"
+  | "blog_outline"
+  | "social_post"
+  | "video_script"
+  | "blog"
+  | "devotional"
+  | "course_outline"
+  | "lesson"
+  | "quiz"
+  | "workbook"
+  | "title"
+  | "description"
+  | "hashtags";
+
+export type GenerationStatus = "draft" | "ready" | "archived";
+
+export type GeneratedContent = {
+  id: string;
+  user_id: string;
+  project_id: string;
+  source_file_id: string | null;
+  content_type: GeneratedContentType;
+  title: string;
+  body: string;
+  tone: string | null;
+  length_label: string | null;
+  target_audience: string | null;
+  call_to_action: string | null;
+  platform: string | null;
+  generation_status: GenerationStatus;
+  source_references: CourseSourceReference[];
+  duplicated_from_id: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -365,6 +407,41 @@ export type Database = {
         };
         Relationships: [];
       };
+      generated_content: {
+        Row: GeneratedContent;
+        Insert: {
+          id?: string;
+          user_id: string;
+          project_id: string;
+          source_file_id?: string | null;
+          content_type: GeneratedContentType;
+          title: string;
+          body?: string;
+          tone?: string | null;
+          length_label?: string | null;
+          target_audience?: string | null;
+          call_to_action?: string | null;
+          platform?: string | null;
+          generation_status?: GenerationStatus;
+          source_references?: CourseSourceReference[];
+          duplicated_from_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          title?: string;
+          body?: string;
+          tone?: string | null;
+          length_label?: string | null;
+          target_audience?: string | null;
+          call_to_action?: string | null;
+          platform?: string | null;
+          generation_status?: GenerationStatus;
+          source_references?: CourseSourceReference[];
+          duplicated_from_id?: string | null;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -377,6 +454,8 @@ export type Database = {
       processing_job_status: ProcessingJobStatus;
       course_difficulty: CourseDifficulty;
       course_status: CourseStatus;
+      generated_content_type: GeneratedContentType;
+      generation_status: GenerationStatus;
     };
     CompositeTypes: Record<string, never>;
   };

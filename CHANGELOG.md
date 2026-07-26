@@ -2,6 +2,17 @@
 
 All notable changes to Luminary AI are documented here.
 
+## [0.6.0] — Milestone 6
+
+### Added
+
+- `generated_content` migration and owner-scoped RLS.
+- Social content generation via mock AI provider (LinkedIn, Instagram, X, YouTube, TikTok, newsletter, blog).
+- Generator controls for platform, tone, length, audience, CTA, and output count.
+- Content library with edit, save, duplicate, and delete.
+- Source references retained on every generated item.
+- Social generator tests and SQL contract tests.
+
 ## [0.5.0] — Milestone 5
 
 ### Added

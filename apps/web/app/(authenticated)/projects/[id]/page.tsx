@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
+import { ContentList } from "@/components/content/ContentList";
 import { CourseList } from "@/components/courses/CourseList";
 import { ProjectDangerZone } from "@/components/projects/ProjectDangerZone";
 import { ProjectStatusBadge } from "@/components/projects/ProjectStatusBadge";
@@ -9,6 +10,7 @@ import { ProjectTypeBadge } from "@/components/projects/ProjectTypeBadge";
 import { Alert } from "@/components/ui/Alert";
 import { SourceFileList } from "@/components/uploads/SourceFileList";
 import { SourceUploadForm } from "@/components/uploads/SourceUploadForm";
+import { listProjectGeneratedContent } from "@/lib/content/queries";
 import { listProjectCourses } from "@/lib/courses/queries";
 import { getOwnProject } from "@/lib/projects/queries";
 import { createClient } from "@/lib/supabase/server";
@@ -42,11 +44,15 @@ export default async function ProjectOverviewPage({ params }: ProjectPageProps) 
     notFound();
   }
 
-  const [{ files, error: filesError }, { courses, error: coursesError }] =
-    await Promise.all([
-      listProjectSourceFiles(supabase, project.id),
-      listProjectCourses(supabase, project.id),
-    ]);
+  const [
+    { files, error: filesError },
+    { courses, error: coursesError },
+    { items: contentItems, error: contentError },
+  ] = await Promise.all([
+    listProjectSourceFiles(supabase, project.id),
+    listProjectCourses(supabase, project.id),
+    listProjectGeneratedContent(supabase, project.id),
+  ]);
 
   const created = new Intl.DateTimeFormat("en", {
     dateStyle: "medium",
@@ -134,6 +140,22 @@ export default async function ProjectOverviewPage({ params }: ProjectPageProps) 
         </div>
         {coursesError ? <Alert tone="error">{coursesError}</Alert> : null}
         <CourseList projectId={project.id} courses={courses} />
+      </section>
+
+      <section className="space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="font-display text-2xl font-semibold">
+            Generated content
+          </h2>
+          <Link
+            href={`/projects/${project.id}/content/new`}
+            className="btn-primary"
+          >
+            Generate content
+          </Link>
+        </div>
+        {contentError ? <Alert tone="error">{contentError}</Alert> : null}
+        <ContentList projectId={project.id} items={contentItems} />
       </section>
 
       <ProjectDangerZone projectId={project.id} status={project.status} />
