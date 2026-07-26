@@ -1,6 +1,6 @@
 # Release checklist (MVP cutover)
 
-Use this after Milestones 1–23 are merged (or when promoting the tip of the milestone chain).
+Use this to promote Milestones 1–24 to `main` (merge train **or** one-shot tip/`mvp-cutover` PR).
 
 ## A. Merge train
 
@@ -35,7 +35,9 @@ Draft PRs are stacked. Merge **oldest → newest** so each PR’s base lands bef
 
 After each merge, retarget the next open PR to `main` (or merge via the stack as-is if GitHub keeps parent bases).
 
-Alternative: merge the tip branch `cursor/milestone-24-worker-queue-c4ad` (or this release branch) into `main` in one shot once reviews are done.
+**Recommended for first cutover:** merge one PR into `main` from `cursor/mvp-cutover-c4ad` (tip of M24). That lands the full MVP without merging #1→#24 individually.
+
+Alternative: merge the tip branch `cursor/milestone-24-worker-queue-c4ad` into `main`, or walk the merge train oldest → newest.
 
 ## B. Supabase
 
