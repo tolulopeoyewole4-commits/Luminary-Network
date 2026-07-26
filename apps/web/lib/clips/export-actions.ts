@@ -50,17 +50,6 @@ function revalidateExportPaths(projectId: string, sourceFileId: string) {
   revalidatePath("/dashboard");
 }
 
-function sanitizeClipFilename(title: string): string {
-  const cleaned = title
-    .toLowerCase()
-    .replace(/[^\w.\- ]+/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "")
-    .slice(0, 48);
-  return cleaned || "clip";
-}
-
 export async function exportClipCandidateAction(
   clipCandidateId: string,
   options?: { existingJobId?: string },
