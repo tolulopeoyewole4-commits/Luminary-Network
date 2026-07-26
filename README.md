@@ -112,9 +112,9 @@ pnpm health:api
 
 ## Current milestone
 
-**Milestone 18 — Async AI generation**
+**Milestone 19 — Job result links**
 
-Course and social generation enqueue as processing jobs and continue after the server-action response (`ASYNC_AI_GENERATION=true` by default). All prior async job flags (video/document/mock) remain from Milestones 14–17.
+Completed processing jobs deep-link to the right output (course, content, transcript, clips, captions). Course/social generator pages show live job status with auto-refresh.
 
 - Release steps: [`docs/release-checklist.md`](docs/release-checklist.md)
 - Host setup: [`docs/deployment.md`](docs/deployment.md)

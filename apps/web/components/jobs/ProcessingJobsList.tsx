@@ -7,6 +7,7 @@ import { useEffect, useState, useTransition } from "react";
 import { Alert } from "@/components/ui/Alert";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { retryProcessingJobAction } from "@/lib/jobs/actions";
+import { getJobResultLink } from "@/lib/jobs/result-links";
 import type { ProcessingJob } from "@/types/database";
 
 const STATUS_STYLES: Record<ProcessingJob["status"], string> = {
@@ -70,6 +71,12 @@ export function ProcessingJobsList({
       <ul className="space-y-3">
         {jobs.map((job) => {
           const busy = pending && activeId === job.id;
+          const resultLink = getJobResultLink(job);
+          const showResultCta =
+            job.status === "completed" ||
+            job.status === "queued" ||
+            job.status === "processing";
+
           return (
             <li key={job.id} className="surface-card px-5 py-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -108,21 +115,11 @@ export function ProcessingJobsList({
                   >
                     {job.status}
                   </span>
-                  {job.source_file_id ? (
-                    <Link
-                      href={`/projects/${job.project_id}/files/${job.source_file_id}`}
-                      className="btn-secondary"
-                    >
-                      Open file
+                  {showResultCta && resultLink ? (
+                    <Link href={resultLink.href} className="btn-secondary">
+                      {resultLink.label}
                     </Link>
-                  ) : (
-                    <Link
-                      href={`/projects/${job.project_id}`}
-                      className="btn-secondary"
-                    >
-                      Open project
-                    </Link>
-                  )}
+                  ) : null}
                   {job.status === "failed" ? (
                     <button
                       type="button"

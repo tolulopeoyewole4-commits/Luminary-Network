@@ -28,7 +28,7 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 
 ## Current milestone
 
-**Milestone 18 — Async AI generation** (complete)
+**Milestone 19 — Job result links** (complete)
 
 ## Completed milestones
 
@@ -51,6 +51,7 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 - **Milestone 16 — Async document extract**: enqueue `document_extract` via `after()` (`ASYNC_DOCUMENT_EXTRACT`), retry reuses job id, file list/page auto-refresh while processing.
 - **Milestone 17 — Async mock video jobs**: enqueue `video_transcribe` / `clip_detect` / `caption_generate` via `after()` (`ASYNC_MOCK_VIDEO_JOBS`).
 - **Milestone 18 — Async AI generation**: enqueue `course_generate` / `social_generate` via `after()` (`ASYNC_AI_GENERATION`), store retry payload on jobs.
+- **Milestone 19 — Job result links**: jobs list deep-links to completed outputs; generator pages show live AI job status.
 
 ## Known issues
 
@@ -63,5 +64,5 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 
 ## Next tasks
 
-- Operator cutover using `docs/release-checklist.md` (merge PRs, apply SQL bundle, deploy API + web).
+- Operator cutover using `docs/release-checklist.md` (merge PRs #1→#19, apply SQL bundle including `0012`, deploy API + web).
 - Optional: dedicated worker queue; paid AI providers; real STT/caption providers.

@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { CourseGeneratorForm } from "@/components/courses/CourseGeneratorForm";
+import { ActiveGenerationStatus } from "@/components/jobs/ActiveGenerationStatus";
 import { Alert } from "@/components/ui/Alert";
 import { listReadyDocumentSectionsForProject } from "@/lib/courses/queries";
+import { listRecentGenerationJobs } from "@/lib/jobs/queries";
 import { getOwnProject } from "@/lib/projects/queries";
 import { createClient } from "@/lib/supabase/server";
 
@@ -23,8 +25,10 @@ export default async function NewCoursePage({ params }: NewCoursePageProps) {
   if (error) return <Alert tone="error">{error}</Alert>;
   if (!project) notFound();
 
-  const { files, error: filesError } =
-    await listReadyDocumentSectionsForProject(supabase, projectId);
+  const [{ files, error: filesError }, generationJobs] = await Promise.all([
+    listReadyDocumentSectionsForProject(supabase, projectId),
+    listRecentGenerationJobs(supabase, projectId, "course_generate"),
+  ]);
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -41,6 +45,12 @@ export default async function NewCoursePage({ params }: NewCoursePageProps) {
           claims.
         </p>
       </section>
+
+      <ActiveGenerationStatus
+        jobs={generationJobs}
+        projectId={projectId}
+        kind="course_generate"
+      />
 
       {filesError ? <Alert tone="error">{filesError}</Alert> : null}
       <CourseGeneratorForm projectId={projectId} files={files} />

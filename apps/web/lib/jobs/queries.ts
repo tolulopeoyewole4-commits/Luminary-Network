@@ -78,3 +78,25 @@ export async function getOwnProcessingJob(
 
   return data;
 }
+
+export async function listRecentGenerationJobs(
+  supabase: Client,
+  projectId: string,
+  jobType: "course_generate" | "social_generate",
+  options: { limit?: number } = {},
+): Promise<ProcessingJob[]> {
+  const { data, error } = await supabase
+    .from("processing_jobs")
+    .select("*")
+    .eq("project_id", projectId)
+    .eq("job_type", jobType)
+    .order("created_at", { ascending: false })
+    .limit(options.limit ?? 5);
+
+  if (error) {
+    console.error("Failed to list generation jobs", error.message);
+    return [];
+  }
+
+  return data ?? [];
+}

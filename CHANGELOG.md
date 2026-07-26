@@ -2,6 +2,14 @@
 
 All notable changes to Luminary AI are documented here.
 
+## [0.19.0] — Milestone 19
+
+### Added
+
+- Processing jobs list deep-links to the right result (course, content, transcript, clips, captions, extract).
+- Course/social generator pages show live active-job status with auto-refresh.
+- Unit coverage for job result link resolution.
+
 ## [0.18.0] — Milestone 18
 
 ### Added
