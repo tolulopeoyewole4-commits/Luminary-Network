@@ -44,7 +44,7 @@ services:
       SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
       SOURCE_STORAGE_BUCKET: ${SOURCE_STORAGE_BUCKET:-source-files}
       WORKER_POLL_SECONDS: ${WORKER_POLL_SECONDS:-2}
-      WORKER_JOB_TYPES: ${WORKER_JOB_TYPES:-document_extract,video_metadata,video_export}
+      WORKER_JOB_TYPES: ${WORKER_JOB_TYPES:-document_extract,video_metadata,video_export,video_transcribe,clip_detect,caption_generate,course_generate,social_generate}
     command: ["python", "-m", "app.workers.run"]
     restart: unless-stopped
 

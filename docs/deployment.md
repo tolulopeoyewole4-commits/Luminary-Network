@@ -88,7 +88,7 @@ The API image is `apps/api/Dockerfile` (Python 3.12 + FFmpeg).
 | `SUPABASE_SERVICE_ROLE_KEY` | yes for worker | Server-only; never expose to browser |
 | `SOURCE_STORAGE_BUCKET` | optional | default `source-files` |
 | `WORKER_POLL_SECONDS` | optional | default `2` |
-| `WORKER_JOB_TYPES` | optional | default `document_extract,video_metadata,video_export` |
+| `WORKER_JOB_TYPES` | optional | default includes heavy media + mock/AI job types |
 
 ### Dedicated worker
 

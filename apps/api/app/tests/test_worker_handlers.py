@@ -2,7 +2,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from app.workers.handlers import WorkerJobError, handle_document_extract, process_job
+from app.workers.handlers import handle_document_extract, process_job
+from app.workers.jobs import WorkerJobError
 
 
 def test_process_job_unknown_type_fails() -> None:

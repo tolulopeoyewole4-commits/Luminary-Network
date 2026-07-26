@@ -37,9 +37,9 @@ export function isAsyncAiGenerationEnabled(): boolean {
 }
 
 /**
- * When true, heavy media jobs (`document_extract`, `video_metadata`,
- * `video_export`) stay queued for the FastAPI worker instead of Next.js
- * `after()`. Default false so local/dev keeps working without a worker process.
+ * When true, worker-handled jobs (heavy media + mock video + course/social AI)
+ * stay queued for the FastAPI worker instead of Next.js `after()`.
+ * Default false so local/dev keeps working without a worker process.
  */
 export function isDedicatedJobWorkerEnabled(): boolean {
   return envFlagEnabled("DEDICATED_JOB_WORKER", false);

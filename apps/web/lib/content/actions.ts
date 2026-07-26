@@ -22,7 +22,10 @@ import {
   isProcessingJobActive,
   markProcessingJobRunningIfActive,
 } from "@/lib/jobs/cancellation";
-import { isAsyncAiGenerationEnabled } from "@/lib/jobs/flags";
+import {
+  isAsyncAiGenerationEnabled,
+  isDedicatedJobWorkerEnabled,
+} from "@/lib/jobs/flags";
 import { createClient } from "@/lib/supabase/server";
 
 export type GenerateSocialState = {
@@ -364,6 +367,16 @@ export async function generateSocialContentAction(
     };
   }
 
+  if (isDedicatedJobWorkerEnabled()) {
+    return {
+      ok: true,
+      queued: true,
+      jobId: queued.work.jobId,
+      message:
+        "Content generation queued for the dedicated worker. Watch the jobs list; open new items from the project content library when ready.",
+    };
+  }
+
   if (isAsyncAiGenerationEnabled()) {
     after(() => {
       void executeSocialGenerate(queued.work);
@@ -424,6 +437,14 @@ export async function retrySocialGenerateAction(
 
   if (!queued.ok) {
     return { ok: false, error: queued.message };
+  }
+
+  if (isDedicatedJobWorkerEnabled()) {
+    return {
+      ok: true,
+      jobId: queued.work.jobId,
+      message: "Content generation re-queued for the dedicated worker.",
+    };
   }
 
   if (isAsyncAiGenerationEnabled()) {

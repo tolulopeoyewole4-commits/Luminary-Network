@@ -28,7 +28,7 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 
 ## Current milestone
 
-**Milestone 24 — Dedicated worker queue** (complete)
+**Milestone 25 — Worker mock/AI jobs** (complete on branch; merge to `main` next)
 
 ## Completed milestones
 
@@ -56,18 +56,20 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 - **Milestone 21 — Markdown/text exports**: download courses as Markdown; download social content as Markdown or plain text.
 - **Milestone 22 — Next.js proxy migration**: replace deprecated `middleware.ts` with `proxy.ts` session guard.
 - **Milestone 23 — Clipboard copy exports**: copy course Markdown and content Markdown/text to the clipboard.
-- **Milestone 24 — Dedicated worker queue**: FastAPI worker claims heavy media jobs (`DEDICATED_JOB_WORKER`); mock/AI jobs still use `after()`.
+- **Milestone 24 — Dedicated worker queue**: FastAPI worker claims heavy media jobs (`DEDICATED_JOB_WORKER`); initially mock/AI stayed on `after()`.
+- **Milestone 25 — Worker mock/AI jobs**: worker also runs transcript/clips/captions + course/social mock generation when `DEDICATED_JOB_WORKER=true`.
 
 ## Known issues
 
 - End-to-end flows require Supabase credentials, applied SQL, and a running FastAPI service with FFmpeg/ffprobe.
-- With `DEDICATED_JOB_WORKER=true`, run `pnpm worker` (or compose worker); otherwise leave the flag off so `after()` handles heavy jobs.
+- With `DEDICATED_JOB_WORKER=true`, run `pnpm worker` (or compose worker); otherwise leave the flag off so `after()` handles jobs.
 - Paid AI providers remain disabled until `AI_PROVIDER` is explicitly extended beyond `mock`.
-- Transcripts are mocked (no speech-to-text provider); replace `buildMockTranscriptSegments` when a real STT API is approved.
-- Clip detection is mocked (no scene/ASR ranking model); replace `buildMockClipCandidates` when a real detector is approved.
+- Transcripts are mocked (no speech-to-text provider); replace mock transcript builders when a real STT API is approved.
+- Clip detection is mocked (no scene/ASR ranking model); replace mock clip builders when a real detector is approved.
 - Apply migrations through `0014_job_worker_claim.sql` (or rebundle) on existing Supabase projects.
+- Host deploy (Supabase/API/Vercel) still needs operator secrets after #25 merge to `main`.
 
 ## Next tasks
 
-- Operator cutover using `docs/release-checklist.md` (merge PRs #1→#24, apply SQL bundle including `0014`, deploy API + web).
-- Optional: move mock/AI jobs onto the worker; paid AI providers; real STT/caption providers.
+- Merge Milestone 25; finish host deploy per `docs/release-checklist.md`.
+- Optional: paid AI providers; real STT/caption providers.

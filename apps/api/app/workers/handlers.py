@@ -8,39 +8,27 @@ from app.services.documents.extract import DocumentExtractionError, extract_docu
 from app.services.video.export import VideoExportError, export_video_clip
 from app.services.video.metadata import VideoMetadataError, extract_video_metadata
 from app.workers.jobs import (
+    WorkerJobError,
     bump_progress,
     complete_job,
     download_source_bytes,
     fail_job,
     job_still_active,
+    require_source_file,
     upload_bytes,
 )
-
-
-class WorkerJobError(Exception):
-    def __init__(self, message: str) -> None:
-        super().__init__(message)
-        self.message = message
-
-
-def _require_source_file(client: Client, source_file_id: str | None) -> dict[str, Any]:
-    if not source_file_id:
-        raise WorkerJobError("Job has no linked source file.")
-    response = (
-        client.table("source_files")
-        .select("*")
-        .eq("id", source_file_id)
-        .maybe_single()
-        .execute()
-    )
-    if not response.data:
-        raise WorkerJobError("Source file not found.")
-    return response.data
+from app.workers.mock_ai_handlers import (
+    handle_caption_generate,
+    handle_clip_detect,
+    handle_course_generate,
+    handle_social_generate,
+    handle_video_transcribe,
+)
 
 
 def handle_document_extract(client: Client, job: dict[str, Any]) -> None:
     job_id = job["id"]
-    source = _require_source_file(client, job.get("source_file_id"))
+    source = require_source_file(client, job.get("source_file_id"))
     bump_progress(client, job_id, 20)
 
     file_bytes = download_source_bytes(client, source["internal_storage_path"])
@@ -94,7 +82,7 @@ def handle_document_extract(client: Client, job: dict[str, Any]) -> None:
 
 def handle_video_metadata(client: Client, job: dict[str, Any]) -> None:
     job_id = job["id"]
-    source = _require_source_file(client, job.get("source_file_id"))
+    source = require_source_file(client, job.get("source_file_id"))
     bump_progress(client, job_id, 20)
 
     file_bytes = download_source_bytes(client, source["internal_storage_path"])
@@ -133,7 +121,7 @@ def handle_video_metadata(client: Client, job: dict[str, Any]) -> None:
 
 def handle_video_export(client: Client, job: dict[str, Any]) -> None:
     job_id = job["id"]
-    source = _require_source_file(client, job.get("source_file_id"))
+    source = require_source_file(client, job.get("source_file_id"))
 
     export_response = (
         client.table("exported_clips")
@@ -204,6 +192,11 @@ HANDLERS = {
     "document_extract": handle_document_extract,
     "video_metadata": handle_video_metadata,
     "video_export": handle_video_export,
+    "video_transcribe": handle_video_transcribe,
+    "clip_detect": handle_clip_detect,
+    "caption_generate": handle_caption_generate,
+    "course_generate": handle_course_generate,
+    "social_generate": handle_social_generate,
 }
 
 
