@@ -3,8 +3,9 @@ from fastapi.responses import Response
 
 from app.core.config import settings
 from app.core.security import require_internal_token
-from app.schemas.video import VideoMetadataResponse
+from app.schemas.video import VideoGenerateRequest, VideoMetadataResponse
 from app.services.video.export import VideoExportError, export_video_clip
+from app.services.video.generate import VideoGenerationError, generate_video
 from app.services.video.metadata import VideoMetadataError, extract_video_metadata
 
 router = APIRouter(prefix="/api/v1/videos", tags=["videos"])
@@ -85,5 +86,41 @@ async def export_video_clip_endpoint(
             "X-Clip-Bytes": str(len(clip_bytes)),
             "X-Clip-Start": f"{start_time:.3f}",
             "X-Clip-End": f"{end_time:.3f}",
+        },
+    )
+
+
+@router.post(
+    "/generate",
+    dependencies=[Depends(require_internal_token)],
+)
+async def generate_video_endpoint(payload: VideoGenerateRequest) -> Response:
+    scenes = (
+        [scene.model_dump() for scene in payload.scenes] if payload.scenes else None
+    )
+
+    try:
+        video_bytes, resolved = generate_video(
+            scenes=scenes,
+            source_text=payload.source_text,
+            mode=payload.mode,
+            title=payload.title,
+        )
+    except VideoGenerationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=exc.message,
+        ) from exc
+
+    total_duration = sum(scene.duration_seconds for scene in resolved)
+
+    return Response(
+        content=video_bytes,
+        media_type="video/mp4",
+        headers={
+            "Content-Disposition": 'attachment; filename="video.mp4"',
+            "X-Video-Bytes": str(len(video_bytes)),
+            "X-Video-Scenes": str(len(resolved)),
+            "X-Video-Duration": f"{total_duration:.3f}",
         },
     )

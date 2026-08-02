@@ -6,6 +6,12 @@ from supabase import Client
 
 from app.services.documents.extract import DocumentExtractionError, extract_document
 from app.services.video.export import VideoExportError, export_video_clip
+from app.services.video.generate import (
+    VideoGenerationError,
+    build_storyboard,
+    normalize_scenes,
+    render_storyboard_video,
+)
 from app.services.video.metadata import VideoMetadataError, extract_video_metadata
 from app.workers.jobs import (
     bump_progress,
@@ -200,10 +206,69 @@ def handle_video_export(client: Client, job: dict[str, Any]) -> None:
         ).execute()
 
 
+def handle_video_generate(client: Client, job: dict[str, Any]) -> None:
+    job_id = job["id"]
+
+    generated_response = (
+        client.table("generated_videos")
+        .select("*")
+        .eq("processing_job_id", job_id)
+        .maybe_single()
+        .execute()
+    )
+    generated = generated_response.data
+    if not generated:
+        raise WorkerJobError("Unable to find generated video linked to this job.")
+
+    bump_progress(client, job_id, 20)
+
+    try:
+        storyboard = generated.get("storyboard") or []
+        if storyboard:
+            scenes = normalize_scenes(storyboard)
+        else:
+            scenes = build_storyboard(
+                generated.get("source_text", ""),
+                generated.get("mode", "TEXT_TO_VIDEO"),
+            )
+        bump_progress(client, job_id, 45)
+        video_bytes = render_storyboard_video(scenes, title=generated.get("title", ""))
+    except VideoGenerationError as exc:
+        raise WorkerJobError(exc.message) from exc
+
+    if not job_still_active(client, job_id):
+        raise WorkerJobError("This job was cancelled.")
+
+    bump_progress(client, job_id, 75)
+    storage_path = generated["internal_storage_path"]
+    upload_bytes(client, storage_path, video_bytes, content_type="video/mp4")
+
+    duration_seconds = round(sum(scene.duration_seconds for scene in scenes), 3)
+    client.table("generated_videos").update(
+        {
+            "status": "ready",
+            "file_size": len(video_bytes),
+            "mime_type": "video/mp4",
+            "duration_seconds": duration_seconds,
+            "error_message": None,
+        },
+    ).eq("id", generated["id"]).execute()
+
+    if not complete_job(client, job_id):
+        client.table("generated_videos").update(
+            {
+                "status": "failed",
+                "error_message": "Generation cancelled by user.",
+            },
+        ).eq("id", generated["id"]).execute()
+        raise WorkerJobError("This job was cancelled.")
+
+
 HANDLERS = {
     "document_extract": handle_document_extract,
     "video_metadata": handle_video_metadata,
     "video_export": handle_video_export,
+    "video_generate": handle_video_generate,
 }
 
 
@@ -230,6 +295,16 @@ def process_job(client: Client, job: dict[str, Any]) -> None:
                 ).eq("id", source_file_id).execute()
         if failed and job_type == "video_export":
             client.table("exported_clips").update(
+                {
+                    "status": "failed",
+                    "error_message": exc.message[:500],
+                },
+            ).eq("processing_job_id", job["id"]).eq(
+                "status",
+                "processing",
+            ).execute()
+        if failed and job_type == "video_generate":
+            client.table("generated_videos").update(
                 {
                     "status": "failed",
                     "error_message": exc.message[:500],
