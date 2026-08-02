@@ -182,7 +182,9 @@ async function enqueueVideoGenerate(input: {
     await supabase
       .from("processing_jobs")
       .update({
-        status: "queued",
+        // Start non-claimable; flipped to "queued" once the artifact row exists
+        // so the dedicated worker never claims a job before generated_videos is written.
+        status: "processing",
         progress_percentage: 0,
         error_message: null,
         started_at: null,
@@ -197,7 +199,8 @@ async function enqueueVideoGenerate(input: {
         user_id: user.id,
         project_id: input.projectId,
         job_type: "video_generate",
-        status: "queued",
+        // Created non-claimable; flipped to "queued" after the artifact row exists.
+        status: "processing",
         progress_percentage: 0,
         payload,
       })
@@ -269,6 +272,14 @@ async function enqueueVideoGenerate(input: {
     }
     generatedVideoId = created.id;
   }
+
+  // Now that the generated_videos artifact row exists, make the job claimable.
+  // This closes a race where the dedicated worker could claim the job before
+  // the artifact was written ("Unable to find generated video linked to this job").
+  await supabase
+    .from("processing_jobs")
+    .update({ status: "queued", progress_percentage: 0 })
+    .eq("id", jobId);
 
   revalidateVideoPaths(input.projectId);
 
