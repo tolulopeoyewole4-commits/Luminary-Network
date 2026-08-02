@@ -14,6 +14,7 @@ from app.services.video.generate import (
 )
 from app.services.video.metadata import VideoMetadataError, extract_video_metadata
 from app.workers.jobs import (
+    _first_row,
     bump_progress,
     complete_job,
     download_source_bytes,
@@ -36,12 +37,13 @@ def _require_source_file(client: Client, source_file_id: str | None) -> dict[str
         client.table("source_files")
         .select("*")
         .eq("id", source_file_id)
-        .maybe_single()
+        .limit(1)
         .execute()
     )
-    if not response.data:
+    row = _first_row(response.data)
+    if not row:
         raise WorkerJobError("Source file not found.")
-    return response.data
+    return row
 
 
 def handle_document_extract(client: Client, job: dict[str, Any]) -> None:
@@ -145,10 +147,10 @@ def handle_video_export(client: Client, job: dict[str, Any]) -> None:
         client.table("exported_clips")
         .select("*")
         .eq("processing_job_id", job_id)
-        .maybe_single()
+        .limit(1)
         .execute()
     )
-    exported = export_response.data
+    exported = _first_row(export_response.data)
     if not exported:
         raise WorkerJobError("Unable to find exported clip linked to this job.")
 
@@ -213,10 +215,10 @@ def handle_video_generate(client: Client, job: dict[str, Any]) -> None:
         client.table("generated_videos")
         .select("*")
         .eq("processing_job_id", job_id)
-        .maybe_single()
+        .limit(1)
         .execute()
     )
-    generated = generated_response.data
+    generated = _first_row(generated_response.data)
     if not generated:
         raise WorkerJobError("Unable to find generated video linked to this job.")
 

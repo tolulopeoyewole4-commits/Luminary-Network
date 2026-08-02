@@ -29,12 +29,12 @@ def test_handle_document_extract_writes_sections() -> None:
         "original_filename": "file.pdf",
     }
     source_resp = MagicMock()
-    source_resp.data = source_row
+    source_resp.data = [source_row]
     complete_resp = MagicMock()
     complete_resp.data = {"id": "j1"}
 
     table = client.table.return_value
-    table.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = (
+    table.select.return_value.eq.return_value.limit.return_value.execute.return_value = (
         source_resp
     )
     table.delete.return_value.eq.return_value.execute.return_value = MagicMock()
@@ -96,10 +96,10 @@ def test_handle_video_generate_uploads_and_completes() -> None:
         "internal_storage_path": "u1/p1/generated/abc.mp4",
     }
     generated_resp = MagicMock()
-    generated_resp.data = generated_row
+    generated_resp.data = [generated_row]
 
     table = client.table.return_value
-    table.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = (
+    table.select.return_value.eq.return_value.limit.return_value.execute.return_value = (
         generated_resp
     )
     table.update.return_value.eq.return_value.execute.return_value = MagicMock()

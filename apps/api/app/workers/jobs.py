@@ -13,12 +13,25 @@ def claim_next_job(client: Client) -> dict[str, Any] | None:
         {"p_job_types": settings.worker_job_type_list()},
     ).execute()
     data = response.data
-    if not data:
+
+    job: dict[str, Any] | None = None
+    if isinstance(data, list):
+        job = data[0] if data else None
+    elif isinstance(data, dict):
+        job = data
+
+    # Some PostgREST versions return an all-null row (instead of nothing) when
+    # the SQL function returns NULL. Treat an id-less row as "no job claimed".
+    if not job or not job.get("id"):
         return None
+    return job
+
+
+def _first_row(data: Any) -> dict[str, Any] | None:
     if isinstance(data, list):
         return data[0] if data else None
     if isinstance(data, dict):
-        return data
+        return data or None
     return None
 
 
@@ -27,10 +40,11 @@ def job_still_active(client: Client, job_id: str) -> bool:
         client.table("processing_jobs")
         .select("status")
         .eq("id", job_id)
-        .maybe_single()
+        .limit(1)
         .execute()
     )
-    status = (response.data or {}).get("status")
+    row = _first_row(response.data) or {}
+    status = row.get("status")
     return status in {"queued", "processing"}
 
 
@@ -66,10 +80,9 @@ def complete_job(
         .eq("id", job_id)
         .in_("status", ["queued", "processing"])
         .select("id")
-        .maybe_single()
         .execute()
     )
-    return bool(response.data)
+    return bool(_first_row(response.data))
 
 
 def fail_job(client: Client, job_id: str, message: str) -> bool:
@@ -88,10 +101,9 @@ def fail_job(client: Client, job_id: str, message: str) -> bool:
         .eq("id", job_id)
         .in_("status", ["queued", "processing"])
         .select("id")
-        .maybe_single()
         .execute()
     )
-    return bool(response.data)
+    return bool(_first_row(response.data))
 
 
 def download_source_bytes(client: Client, storage_path: str) -> bytes:
