@@ -88,7 +88,8 @@ export type ProcessingJobType =
   | "video_export"
   | "caption_generate"
   | "course_generate"
-  | "social_generate";
+  | "social_generate"
+  | "video_generate";
 
 export type ProcessingJobStatus =
   | "queued"
@@ -278,6 +279,33 @@ export type ExportedClip = {
   mime_type: string;
   internal_storage_path: string;
   status: ExportedClipStatus;
+  error_message: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type GeneratedVideoStatus = "processing" | "ready" | "failed";
+export type GeneratedVideoMode = "TEXT_TO_VIDEO" | "SCRIPT_TO_FILM";
+
+export type GeneratedVideoStoryboardScene = {
+  caption: string;
+  duration_seconds: number;
+};
+
+export type GeneratedVideo = {
+  id: string;
+  user_id: string;
+  project_id: string;
+  processing_job_id: string | null;
+  title: string;
+  mode: GeneratedVideoMode;
+  source_text: string;
+  storyboard: GeneratedVideoStoryboardScene[];
+  duration_seconds: number | null;
+  file_size: number | null;
+  mime_type: string;
+  internal_storage_path: string;
+  status: GeneratedVideoStatus;
   error_message: string | null;
   created_at: string;
   updated_at: string;
@@ -711,6 +739,41 @@ export type Database = {
         };
         Relationships: [];
       };
+      generated_videos: {
+        Row: GeneratedVideo;
+        Insert: {
+          id?: string;
+          user_id: string;
+          project_id: string;
+          processing_job_id?: string | null;
+          title?: string;
+          mode?: GeneratedVideoMode;
+          source_text?: string;
+          storyboard?: GeneratedVideoStoryboardScene[];
+          duration_seconds?: number | null;
+          file_size?: number | null;
+          mime_type?: string;
+          internal_storage_path: string;
+          status?: GeneratedVideoStatus;
+          error_message?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          title?: string;
+          mode?: GeneratedVideoMode;
+          source_text?: string;
+          storyboard?: GeneratedVideoStoryboardScene[];
+          duration_seconds?: number | null;
+          file_size?: number | null;
+          mime_type?: string;
+          internal_storage_path?: string;
+          status?: GeneratedVideoStatus;
+          error_message?: string | null;
+          processing_job_id?: string | null;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -729,6 +792,7 @@ export type Database = {
       clip_candidate_status: ClipCandidateStatus;
       exported_clip_status: ExportedClipStatus;
       caption_status: CaptionStatus;
+      generated_video_status: GeneratedVideoStatus;
     };
     CompositeTypes: Record<string, never>;
   };

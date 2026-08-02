@@ -74,6 +74,16 @@ describe("getJobResultLink", () => {
     );
   });
 
+  it("links completed video generation jobs to the videos tab", () => {
+    const link = getJobResultLink(
+      job({ job_type: "video_generate", source_file_id: null }),
+    );
+    expect(link).toEqual({
+      href: "/projects/proj-1/videos",
+      label: "Open videos",
+    });
+  });
+
   it("falls back to project when course payload lacks a result id", () => {
     const link = getJobResultLink(
       job({

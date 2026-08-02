@@ -30,6 +30,13 @@ export function getJobResultLink(job: ProcessingJob): JobResultLink | null {
     return { href: projectBase, label: "Open project" };
   }
 
+  if (job.job_type === "video_generate") {
+    return {
+      href: `${projectBase}/videos`,
+      label: job.status === "completed" ? "Open videos" : "Open project",
+    };
+  }
+
   if (job.job_type === "social_generate") {
     const ids = Array.isArray(payload?.resultContentIds)
       ? payload.resultContentIds.map(String).filter(Boolean)

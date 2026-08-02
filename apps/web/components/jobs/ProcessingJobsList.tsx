@@ -31,6 +31,7 @@ const JOB_LABELS: Record<ProcessingJob["job_type"], string> = {
   caption_generate: "Caption generation",
   course_generate: "Course generation",
   social_generate: "Social content generation",
+  video_generate: "AI video generation",
 };
 
 type ProcessingJobsListProps = {
