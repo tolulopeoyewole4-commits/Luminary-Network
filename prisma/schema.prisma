@@ -1,0 +1,46 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  title       String
+  description String   @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  videos      Video[]
+}
+
+// NOTE: SQLite does not support Prisma enums, so mode/status are plain strings.
+// mode:   "TEXT_TO_VIDEO" | "SCRIPT_TO_FILM"
+// status: "PENDING" | "PROCESSING" | "READY" | "FAILED"
+model Video {
+  id           String   @id @default(cuid())
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId    String
+  title        String
+  mode         String   @default("TEXT_TO_VIDEO")
+  status       String   @default("PENDING")
+  sourceText   String   @default("")
+  filePath     String?
+  durationSec  Float    @default(0)
+  errorMessage String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  scenes       Scene[]
+}
+
+model Scene {
+  id          String   @id @default(cuid())
+  video       Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  videoId     String
+  index       Int
+  caption     String
+  durationSec Float    @default(3)
+  createdAt   DateTime @default(now())
+}
