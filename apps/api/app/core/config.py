@@ -17,7 +17,9 @@ class Settings(BaseSettings):
     supabase_service_role_key: str = ""
     source_storage_bucket: str = "source-files"
     worker_poll_seconds: float = 2.0
-    worker_job_types: str = "document_extract,video_metadata,video_export"
+    worker_job_types: str = (
+        "document_extract,video_metadata,video_export,video_generate"
+    )
 
     def cors_origins(self) -> list[str]:
         defaults = [

@@ -71,3 +71,25 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 
 - Operator cutover using `docs/release-checklist.md` (merge PRs #1→#24, apply SQL bundle including `0014`, deploy API + web).
 - Optional: move mock/AI jobs onto the worker; paid AI providers; real STT/caption providers.
+
+## Cursor Cloud specific instructions
+
+Monorepo dev commands live in the root `package.json` (`dev:web`, `dev:api`, `worker`, `test`, `gate`, `sql:bundle`) and `README.md`; prefer those over ad-hoc commands.
+
+Environment setup (not handled by the dependency update script):
+- The FastAPI service needs a Python venv at `apps/api/.venv`. Creating it requires the `python3-venv`/`python3.12-venv` system package (installed via `apt`, not the update script). Then: `python3 -m venv apps/api/.venv && apps/api/.venv/bin/pip install -r apps/api/requirements.txt`.
+- Run the API for local end-to-end flows: `pnpm dev:api` (FastAPI on :8000). Web talks to it via `API_URL` using the `X-Internal-Token` shared secret.
+
+Non-obvious notes for the AI video generation feature (`video_generate`):
+- Rendering needs the `ffmpeg` binary on PATH and Python `pillow` (in `apps/api/requirements.txt`). Scene frames are drawn with Pillow using DejaVu fonts at `/usr/share/fonts/truetype/dejavu`.
+- The self-contained render path is `POST /api/v1/videos/generate` (accepts `scenes` or `source_text`+`mode`, returns MP4 bytes). It needs no Supabase, so it is the fastest way to verify rendering: `.venv/bin/pytest app/tests/test_video_generate.py`.
+- Full browser flow (create video from the `/projects/[id]/videos` page) requires Supabase creds + the SQL bundle applied (now including `0015_generated_videos.sql`) and a private `source-files` storage bucket. Generated MP4s are stored at `{userId}/{projectId}/generated/{uuid}.mp4` and played via short-lived signed URLs.
+- Storyboards come from the `AI_PROVIDER=mock` provider (`generateVideoStoryboard`); everything works offline without a paid provider.
+- The dedicated worker only claims `video_generate` when `WORKER_JOB_TYPES` includes it (now in the default). With `DEDICATED_JOB_WORKER=false` (default), Next.js `after()` renders via the API instead.
+- Worker auth: `supabase-py` (2.31+, pinned in `apps/api/requirements.txt`) accepts the new `sb_secret_...` API keys, so `SUPABASE_SERVICE_ROLE_KEY` may be either a secret key or a legacy `service_role` JWT. Only set `DEDICATED_JOB_WORKER=true` while a worker (`pnpm worker`) is actually running with a valid service credential, or generated videos will stay stuck in `processing`.
+- postgrest 2.x moved `maybe_single()` off the filter builder; worker queries use `.limit(1)` + the `_first_row(...)` helper in `app/workers/jobs.py` instead. Follow that pattern for new worker queries.
+
+### Desktop shell (Electron)
+- `apps/desktop` is an Electron wrapper that opens the web app in a native window (`pnpm dev:desktop`); it boots the web (+ API) servers if they aren't already running, else attaches. See `apps/desktop/README.md`.
+- The Electron **binary** download is deliberately NOT run during `pnpm install` (kept out of `onlyBuiltDependencies`) so the cloud update script stays light; fetch it on demand with `pnpm setup:desktop`. Don't add `electron` to `onlyBuiltDependencies`.
+- To run Electron inside the VM/VNC desktop: `DISPLAY=:1` and pass `--no-sandbox` (e.g. `dev:nosandbox`).

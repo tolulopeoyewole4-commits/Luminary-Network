@@ -1,5 +1,6 @@
 import { buildCourseOutlinePrompt } from "@/lib/ai/prompts/course-outline";
 import { buildSocialContentPrompt } from "@/lib/ai/prompts/social-content";
+import { buildVideoStoryboardPrompt } from "@/lib/ai/prompts/video-storyboard";
 import {
   courseOutlineSchema,
   type CourseGenerationInput,
@@ -15,7 +16,40 @@ import {
   type SocialLength,
   type SocialPlatform,
 } from "@/lib/ai/schemas/social";
+import {
+  videoStoryboardSchema,
+  type VideoStoryboard,
+  type VideoStoryboardInput,
+} from "@/lib/ai/schemas/video";
 import type { AIProvider } from "@/lib/ai/providers/types";
+
+const MIN_SCENE_SECONDS = 2.5;
+const MAX_SCENE_SECONDS = 7;
+const MAX_SCENES_TEXT = 8;
+const MAX_SCENES_FILM = 20;
+const MAX_CAPTION_CHARS = 220;
+
+function clampCaption(text: string): string {
+  const clean = text.replace(/\s+/g, " ").trim();
+  if (clean.length <= MAX_CAPTION_CHARS) return clean;
+  return `${clean.slice(0, MAX_CAPTION_CHARS - 1).trimEnd()}…`;
+}
+
+function estimateSceneDuration(text: string): number {
+  const words = text.trim().split(/\s+/).filter(Boolean).length;
+  const seconds = words / 3; // ~3 words/second reading pace
+  return Number(
+    Math.min(MAX_SCENE_SECONDS, Math.max(MIN_SCENE_SECONDS, seconds)).toFixed(1),
+  );
+}
+
+function splitSentences(text: string): string[] {
+  return text
+    .replace(/\s+/g, " ")
+    .split(/(?<=[.!?])\s+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
 
 function toReference(section: CourseGenerationSection): SourceReference {
   return {
@@ -196,6 +230,52 @@ export class MockAIProvider implements AIProvider {
     }
 
     return outputs;
+  }
+
+  async generateVideoStoryboard(
+    input: VideoStoryboardInput,
+  ): Promise<VideoStoryboard> {
+    // Keep prompt construction in the path so future providers share it.
+    void buildVideoStoryboardPrompt(input);
+
+    const trimmed = input.sourceText.trim();
+    if (!trimmed) {
+      throw new Error("Provide some text to generate a video from.");
+    }
+
+    const maxScenes =
+      input.mode === "SCRIPT_TO_FILM" ? MAX_SCENES_FILM : MAX_SCENES_TEXT;
+
+    let chunks: string[];
+    if (input.mode === "SCRIPT_TO_FILM") {
+      const paragraphs = trimmed
+        .split(/\n\s*\n|\n(?=(?:INT\.|EXT\.|SCENE\b))/i)
+        .map((p) => p.trim())
+        .filter(Boolean);
+      chunks = paragraphs.length > 1 ? paragraphs : splitSentences(trimmed);
+    } else {
+      chunks = splitSentences(trimmed);
+      if (chunks.length === 0) chunks = [trimmed];
+    }
+
+    if (chunks.length === 0) chunks = [trimmed];
+
+    // Merge neighbours if we exceed the scene budget so no text is dropped.
+    if (chunks.length > maxScenes) {
+      const groupSize = Math.ceil(chunks.length / maxScenes);
+      const merged: string[] = [];
+      for (let i = 0; i < chunks.length; i += groupSize) {
+        merged.push(chunks.slice(i, i + groupSize).join(" "));
+      }
+      chunks = merged;
+    }
+
+    const scenes = chunks.map((chunk) => ({
+      caption: clampCaption(chunk),
+      durationSeconds: estimateSceneDuration(chunk),
+    }));
+
+    return videoStoryboardSchema.parse({ scenes });
   }
 }
 

@@ -451,6 +451,21 @@ export async function retryProcessingJobAction(
     };
   }
 
+  if (job.job_type === "video_generate") {
+    const { retryVideoGenerateAction } = await import(
+      "@/lib/videos/generate-actions"
+    );
+    const result = await retryVideoGenerateAction(job.id);
+    if (!result.ok) {
+      return { ok: false, error: result.error };
+    }
+    return {
+      ok: true,
+      jobId: result.jobId,
+      message: result.message,
+    };
+  }
+
   return {
     ok: false,
     error: `Retry is not implemented for job type "${job.job_type}" yet.`,

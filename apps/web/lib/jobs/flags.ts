@@ -37,6 +37,14 @@ export function isAsyncAiGenerationEnabled(): boolean {
 }
 
 /**
+ * When true (default), AI video generation (text -> video / script -> film)
+ * continues after the server-action response.
+ */
+export function isAsyncVideoGenerateEnabled(): boolean {
+  return envFlagEnabled("ASYNC_VIDEO_GENERATE", true);
+}
+
+/**
  * When true, heavy media jobs (`document_extract`, `video_metadata`,
  * `video_export`) stay queued for the FastAPI worker instead of Next.js
  * `after()`. Default false so local/dev keeps working without a worker process.

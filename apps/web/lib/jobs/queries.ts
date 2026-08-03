@@ -82,7 +82,7 @@ export async function getOwnProcessingJob(
 export async function listRecentGenerationJobs(
   supabase: Client,
   projectId: string,
-  jobType: "course_generate" | "social_generate",
+  jobType: "course_generate" | "social_generate" | "video_generate",
   options: { limit?: number } = {},
 ): Promise<ProcessingJob[]> {
   const { data, error } = await supabase

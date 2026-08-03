@@ -147,6 +147,20 @@ export default async function ProjectOverviewPage({ params }: ProjectPageProps) 
 
       <section className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="font-display text-2xl font-semibold">AI videos</h2>
+            <p className="mt-1 text-sm text-muted">
+              Turn a prompt into a video or a script into a full film.
+            </p>
+          </div>
+          <Link href={`/projects/${project.id}/videos`} className="btn-primary">
+            Create video
+          </Link>
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="font-display text-2xl font-semibold">Courses</h2>
           <Link
             href={`/projects/${project.id}/courses/new`}
