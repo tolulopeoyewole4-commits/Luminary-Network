@@ -298,7 +298,10 @@ export default function ReelExportDesktopDemoPage() {
         </section>
 
         <p className="pb-8 text-center text-xs text-muted">
-          Desktop demo view · static mock · not connected to Supabase
+          Desktop demo view · static mock · not connected to Supabase ·{" "}
+          <a href="/demo/pilot-edits" className="underline">
+            Open real pilot edits
+          </a>
         </p>
       </main>
     </div>

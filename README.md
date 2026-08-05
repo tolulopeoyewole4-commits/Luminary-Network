@@ -120,6 +120,9 @@ Desktop shell details: [`apps/desktop/README.md`](apps/desktop/README.md).
 
 Public desktop mock (no Supabase): [`/demo/reel-export`](http://localhost:3000/demo/reel-export)
 
+Pilot edits from the shared Drive sources: [`/demo/pilot-edits`](http://localhost:3000/demo/pilot-edits)  
+Regenerate assets: `pnpm pilot:prepare`
+
 ---
 
 ## Current milestone

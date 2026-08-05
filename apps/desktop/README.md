@@ -32,6 +32,9 @@ pnpm dev:desktop
 
 # optional: open the reel-export desktop mock (no Supabase required)
 LUMINARY_START_API=0 LUMINARY_START_PATH=/demo/reel-export pnpm dev:desktop
+
+# optional: open real pilot edits cut from the shared Drive videos
+LUMINARY_START_API=0 LUMINARY_START_PATH=/demo/pilot-edits pnpm dev:desktop
 ```
 
 The first launch may take a few seconds while the Next.js dev server compiles.
