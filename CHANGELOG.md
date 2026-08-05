@@ -10,7 +10,7 @@ All notable changes to Luminary AI are documented here.
 - Burn-in captions on exported clips from overlapping `caption_cues` (WebVTT → FFmpeg subtitles).
 - Creator brand identity stamp from profile display name (editable in Settings).
 - Migration `0015_reel_export_presets.sql` (`aspect_ratio`, `burn_captions`, `brand_stamp` on `exported_clips`).
-- Clips-page reel preset controls with session persistence; exports list shows applied presets.
+- Clips-page reel preset controls; exports list shows applied presets.
 - API Docker image installs `fonts-dejavu-core` for brand-stamp drawtext.
 - Unit coverage for caption slicing, vertical export sizing, and preset helpers.
 

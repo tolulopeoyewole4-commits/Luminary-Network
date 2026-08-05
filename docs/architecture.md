@@ -124,7 +124,7 @@ Browser
 ## Vertical reel / short export (Milestone 26)
 
 1. Migration `0015_reel_export_presets.sql` adds `clip_aspect_ratio` plus burn/brand flags on `exported_clips`.
-2. Clips page exposes reel presets (default `9:16` + burn captions + brand stamp when available).
+2. Clips page exposes reel presets (default `9:16` + burn captions + brand stamp when available) for the current review session.
 3. Caption cues overlapping the clip window are sliced to relative times and burned via FFmpeg `subtitles`.
 4. Brand stamp uses `profiles.display_name` (editable in Settings) via FFmpeg `drawtext`; API Docker image includes `fonts-dejavu-core`.
 5. Mock clip detection prefers 15–45s short-form windows labeled for Reels/Shorts.

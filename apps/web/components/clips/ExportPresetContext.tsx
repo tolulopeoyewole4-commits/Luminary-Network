@@ -1,20 +1,12 @@
 "use client";
 
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useContext, useState, type ReactNode } from "react";
 
 import {
   DEFAULT_CLIP_EXPORT_PRESETS,
   parseClipExportPresets,
   type ClipExportPresets,
 } from "@/lib/clips/export-presets";
-
-const STORAGE_KEY = "luminary.clipExportPresets.v1";
 
 type ExportPresetContextValue = {
   presets: ClipExportPresets;
@@ -53,35 +45,14 @@ export function ExportPresetProvider({
     }),
   );
 
-  useEffect(() => {
-    try {
-      const raw = window.sessionStorage.getItem(STORAGE_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as Partial<ClipExportPresets>;
-      setPresetsState(
-        parseClipExportPresets({
-          ...parsed,
-          burnCaptions: hasCaptions ? Boolean(parsed.burnCaptions) : false,
-          brandStamp: brandName ? Boolean(parsed.brandStamp) : false,
-        }),
-      );
-    } catch {
-      // Ignore malformed session storage.
-    }
-  }, [brandName, hasCaptions]);
-
   function setPresets(next: ClipExportPresets) {
-    const normalized = parseClipExportPresets({
-      ...next,
-      burnCaptions: hasCaptions ? next.burnCaptions : false,
-      brandStamp: brandName ? next.brandStamp : false,
-    });
-    setPresetsState(normalized);
-    try {
-      window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
-    } catch {
-      // Private mode / quota — presets still work for this view.
-    }
+    setPresetsState(
+      parseClipExportPresets({
+        ...next,
+        burnCaptions: hasCaptions ? next.burnCaptions : false,
+        brandStamp: brandName ? next.brandStamp : false,
+      }),
+    );
   }
 
   return (
