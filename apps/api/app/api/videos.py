@@ -55,6 +55,9 @@ async def export_video_clip_endpoint(
     start_time: float = Form(...),
     end_time: float = Form(...),
     original_filename: str = Form(default="video.mp4"),
+    aspect_ratio: str = Form(default="original"),
+    captions_vtt: str = Form(default=""),
+    brand_text: str = Form(default=""),
 ) -> Response:
     max_bytes = _max_video_bytes()
     file_bytes = await file.read(max_bytes + 1)
@@ -70,6 +73,9 @@ async def export_video_clip_endpoint(
             start_time=start_time,
             end_time=end_time,
             filename=original_filename or (file.filename or "video.mp4"),
+            aspect_ratio=aspect_ratio or "original",
+            captions_vtt=captions_vtt or None,
+            brand_text=brand_text or None,
         )
     except VideoExportError as exc:
         raise HTTPException(
@@ -85,5 +91,6 @@ async def export_video_clip_endpoint(
             "X-Clip-Bytes": str(len(clip_bytes)),
             "X-Clip-Start": f"{start_time:.3f}",
             "X-Clip-End": f"{end_time:.3f}",
+            "X-Clip-Aspect-Ratio": aspect_ratio or "original",
         },
     )

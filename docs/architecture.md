@@ -110,16 +110,24 @@ Browser
 5. Review UI supports preview seek, edit title/reason/start/end, and approve/reject.
 6. Failed `clip_detect` jobs can be retried from the jobs UI.
 
-## FFmpeg clip export (Milestone 10 + 15 + 24)
+## FFmpeg clip export (Milestone 10 + 15 + 24 + 26)
 
-1. Creators approve a candidate, then start a `video_export` job (`queued`).
+1. Creators approve a candidate, choose reel presets (aspect ratio, burn captions, brand stamp), then start a `video_export` job (`queued`).
 2. With `DEDICATED_JOB_WORKER=true`, the action returns immediately and a FastAPI worker claims the job.
 3. Otherwise, with `ASYNC_CLIP_EXPORT=true` (default), the server action returns immediately and continues via Next.js `after()`.
-4. The `after()` continuation downloads the private source and posts it to FastAPI `/api/v1/videos/export-clip` with start/end.
-5. FFmpeg cuts the window (H.264/AAC, faststart); the MP4 is stored at `{user_id}/{project_id}/exports/{uuid}.mp4`.
-6. `exported_clips` stores metadata; the candidate status becomes `exported` when ready.
-7. Downloads use short-lived signed URLs; the exports list auto-refreshes while processing; failed jobs can be retried.
+4. The `after()` continuation (or worker) downloads the private source and posts it to FastAPI `/api/v1/videos/export-clip` with start/end plus optional WebVTT / brand text.
+5. FFmpeg cuts the window and optionally reframes to `9:16` / `1:1`, burns caption cues, and stamps the creator display name (H.264/AAC, faststart).
+6. `exported_clips` stores metadata including `aspect_ratio`, `burn_captions`, and `brand_stamp`; the candidate status becomes `exported` when ready.
+7. Downloads use short-lived signed URLs; the exports list auto-refreshes while processing; failed jobs can be retried with the same presets.
 8. Set `ASYNC_CLIP_EXPORT=false` (and leave worker mode off) to force synchronous export.
+
+## Vertical reel / short export (Milestone 26)
+
+1. Migration `0015_reel_export_presets.sql` adds `clip_aspect_ratio` plus burn/brand flags on `exported_clips`.
+2. Clips page exposes reel presets (default `9:16` + burn captions + brand stamp when available).
+3. Caption cues overlapping the clip window are sliced to relative times and burned via FFmpeg `subtitles`.
+4. Brand stamp uses `profiles.display_name` (editable in Settings) via FFmpeg `drawtext`; API Docker image includes `fonts-dejavu-core`.
+5. Mock clip detection prefers 15–45s short-form windows labeled for Reels/Shorts.
 
 ## Captions (Milestone 11 + 17)
 

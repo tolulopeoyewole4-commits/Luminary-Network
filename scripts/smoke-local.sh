@@ -11,8 +11,10 @@ pnpm gate
 echo "==> Bundling SQL"
 pnpm sql:bundle
 
-echo "==> Verifying SQL bundle mentions latest worker-claim migration"
-grep -q "0014_job_worker_claim.sql" database/dist/supabase_schema.sql
+echo "==> Verifying SQL bundle mentions latest reel-export migration"
+grep -q "0015_reel_export_presets.sql" database/dist/supabase_schema.sql
+grep -q "clip_aspect_ratio" database/dist/supabase_schema.sql
+grep -q "burn_captions" database/dist/supabase_schema.sql
 grep -q "claim_processing_job" database/dist/supabase_schema.sql
 grep -q "cancelled" database/dist/supabase_schema.sql
 

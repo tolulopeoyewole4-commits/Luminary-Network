@@ -155,16 +155,18 @@ export function ClipCandidatesReview({
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
         <section className="surface-card overflow-hidden">
           {signedVideoUrl ? (
-            <video
-              ref={videoRef}
-              className="aspect-video w-full bg-black"
-              src={signedVideoUrl}
-              controls
-              preload="metadata"
-              onTimeUpdate={(event) => {
-                setCurrentTime(event.currentTarget.currentTime);
-              }}
-            />
+            <div className="flex justify-center bg-black">
+              <video
+                ref={videoRef}
+                className="max-h-[28rem] w-full bg-black object-contain"
+                src={signedVideoUrl}
+                controls
+                preload="metadata"
+                onTimeUpdate={(event) => {
+                  setCurrentTime(event.currentTarget.currentTime);
+                }}
+              />
+            </div>
           ) : (
             <div className="flex aspect-video items-center justify-center bg-slate-900 px-6 text-center text-sm text-white/80">
               Secure video preview unavailable. You can still edit clip windows
@@ -246,15 +248,16 @@ export function ClipCandidatesReview({
               Review candidates
             </h2>
             <p className="mt-1 text-sm text-muted">
-              Approve clips, then export with FFmpeg to private storage. Re-running
-              detection replaces suggested and rejected items only.
+              Approve clips, then export as vertical reels with your selected
+              presets. Re-running detection replaces suggested and rejected items
+              only.
             </p>
           </div>
           {approvedCount > 0 ? (
             <ExportClipButton
               mode="approved"
               sourceFileId={sourceFileId}
-              label={`Export ${approvedCount} approved`}
+              label={`Export ${approvedCount} approved reels`}
             />
           ) : null}
         </div>
@@ -396,8 +399,8 @@ export function ClipCandidatesReview({
                     clipCandidateId={clip.id}
                     label={
                       clip.status === "exported"
-                        ? "Re-export with FFmpeg"
-                        : "Export with FFmpeg"
+                        ? "Re-export reel"
+                        : "Export reel"
                     }
                   />
                 ) : null}

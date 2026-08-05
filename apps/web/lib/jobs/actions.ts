@@ -380,7 +380,7 @@ export async function retryProcessingJobAction(
   if (job.job_type === "video_export") {
     const { data: exported } = await supabase
       .from("exported_clips")
-      .select("clip_candidate_id")
+      .select("clip_candidate_id, aspect_ratio, burn_captions, brand_stamp")
       .eq("processing_job_id", job.id)
       .maybeSingle();
 
@@ -396,6 +396,11 @@ export async function retryProcessingJobAction(
     );
     const result = await exportClipCandidateAction(exported.clip_candidate_id, {
       existingJobId: job.id,
+      presets: {
+        aspectRatio: exported.aspect_ratio ?? "original",
+        burnCaptions: Boolean(exported.burn_captions),
+        brandStamp: Boolean(exported.brand_stamp),
+      },
     });
     if (!result.ok) {
       return { ok: false, error: result.error };

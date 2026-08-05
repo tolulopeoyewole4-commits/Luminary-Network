@@ -197,13 +197,13 @@ export default async function DocumentViewerPage({
                 href={`/projects/${projectId}/files/${file.id}/clips`}
                 className="btn-secondary"
               >
-                {clipCount > 0 ? "Review clips" : "Clips"}
+                {clipCount > 0 ? "Review & export reels" : "Clips / reels"}
               </Link>
               <DetectClipsButton
                 sourceFileId={file.id}
                 projectId={projectId}
                 label={
-                  clipCount > 0 ? "Re-detect clips" : "Detect clip candidates"
+                  clipCount > 0 ? "Re-detect clips" : "Detect short-form clips"
                 }
               />
               <Link
@@ -228,8 +228,9 @@ export default async function DocumentViewerPage({
 
       {canProcessVideo ? (
         <Alert tone="info">
-          Transcript → clips → captions: generate timed cues, edit them, then
-          download WebVTT/SRT. Approved clips still export with FFmpeg.
+          Transcript → clips → captions → reel export: generate timed cues,
+          approve short-form windows, then export vertical MP4s with burned
+          captions and brand stamps.
         </Alert>
       ) : null}
 

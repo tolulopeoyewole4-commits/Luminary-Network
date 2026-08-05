@@ -47,7 +47,7 @@ describe("buildMockClipCandidates", () => {
     });
 
     expect(clips.length).toBeGreaterThan(0);
-    expect(clips[0].reason.toLowerCase()).toContain("teaching");
+    expect(clips[0].reason.toLowerCase()).toMatch(/short-form|reels|shorts/);
     expect(clips[0].startTime).toBe(0);
   });
 });

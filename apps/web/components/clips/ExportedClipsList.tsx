@@ -5,6 +5,7 @@ import { useEffect, useState, useTransition } from "react";
 
 import { Alert } from "@/components/ui/Alert";
 import { createExportedClipSignedUrlAction } from "@/lib/clips/export-actions";
+import { describeExportPresets } from "@/lib/clips/export-presets";
 import { formatTimestamp } from "@/lib/clips/mock";
 import { formatBytes } from "@/lib/uploads/limits";
 import type { ExportedClip } from "@/types/database";
@@ -56,10 +57,10 @@ export function ExportedClipsList({ exports }: ExportedClipsListProps) {
 
   return (
     <section className="space-y-3">
-      <h2 className="font-display text-2xl font-semibold">Exported clips</h2>
+      <h2 className="font-display text-2xl font-semibold">Exported reels</h2>
       <p className="text-sm text-muted">
-        Private FFmpeg exports stored beside your source files. Downloads use
-        short-lived signed URLs.
+        Private FFmpeg exports with optional vertical framing, burned captions,
+        and brand stamps. Downloads use short-lived signed URLs.
       </p>
       {error ? <Alert tone="error">{error}</Alert> : null}
       <ul className="space-y-3">
@@ -81,6 +82,13 @@ export function ExportedClipsList({ exports }: ExportedClipsListProps) {
                     {item.file_size != null
                       ? ` · ${formatBytes(item.file_size)}`
                       : ""}
+                  </p>
+                  <p className="mt-1 text-xs text-muted">
+                    {describeExportPresets({
+                      aspectRatio: item.aspect_ratio ?? "original",
+                      burnCaptions: Boolean(item.burn_captions),
+                      brandStamp: Boolean(item.brand_stamp),
+                    })}
                   </p>
                   {item.error_message ? (
                     <p className="mt-2 text-sm text-red-700">{item.error_message}</p>

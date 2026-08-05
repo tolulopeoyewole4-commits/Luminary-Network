@@ -263,6 +263,8 @@ export type ClipCandidate = {
 
 export type ExportedClipStatus = "processing" | "ready" | "failed";
 
+export type ClipAspectRatio = "original" | "9:16" | "1:1";
+
 export type ExportedClip = {
   id: string;
   user_id: string;
@@ -279,6 +281,9 @@ export type ExportedClip = {
   internal_storage_path: string;
   status: ExportedClipStatus;
   error_message: string | null;
+  aspect_ratio: ClipAspectRatio;
+  burn_captions: boolean;
+  brand_stamp: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -653,6 +658,9 @@ export type Database = {
           internal_storage_path: string;
           status?: ExportedClipStatus;
           error_message?: string | null;
+          aspect_ratio?: ClipAspectRatio;
+          burn_captions?: boolean;
+          brand_stamp?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -667,6 +675,9 @@ export type Database = {
           status?: ExportedClipStatus;
           error_message?: string | null;
           processing_job_id?: string | null;
+          aspect_ratio?: ClipAspectRatio;
+          burn_captions?: boolean;
+          brand_stamp?: boolean;
         };
         Relationships: [];
       };
@@ -728,6 +739,7 @@ export type Database = {
       transcript_status: TranscriptStatus;
       clip_candidate_status: ClipCandidateStatus;
       exported_clip_status: ExportedClipStatus;
+      clip_aspect_ratio: ClipAspectRatio;
       caption_status: CaptionStatus;
     };
     CompositeTypes: Record<string, never>;

@@ -5,10 +5,15 @@ import type { Metadata } from "next";
 import { ClipCandidatesReview } from "@/components/clips/ClipCandidatesReview";
 import { DetectClipsButton } from "@/components/clips/DetectClipsButton";
 import { ExportClipButton } from "@/components/clips/ExportClipButton";
+import { ExportPresetControls } from "@/components/clips/ExportPresetControls";
+import { ExportPresetProvider } from "@/components/clips/ExportPresetContext";
 import { ExportedClipsList } from "@/components/clips/ExportedClipsList";
 import { Alert } from "@/components/ui/Alert";
+import { getCaptionsForSourceFile } from "@/lib/captions/queries";
 import { listExportedClipsForSourceFile } from "@/lib/clips/export-queries";
+import { brandLabelFromProfile } from "@/lib/clips/export-presets";
 import { listClipCandidatesForSourceFile } from "@/lib/clips/queries";
+import { getOwnProfile } from "@/lib/profiles";
 import { createClient } from "@/lib/supabase/server";
 import { getTranscriptForSourceFile } from "@/lib/transcripts/queries";
 import {
@@ -37,6 +42,9 @@ export async function generateMetadata({
 export default async function ClipsPage({ params }: ClipsPageProps) {
   const { id: projectId, fileId } = await params;
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   const { file, error } = await getOwnSourceFile(supabase, fileId);
 
   if (error) return <Alert tone="error">{error}</Alert>;
@@ -60,10 +68,14 @@ export default async function ClipsPage({ params }: ClipsPageProps) {
     { clips, error: clipsError },
     { transcript },
     { exports, error: exportsError },
+    { caption },
+    profile,
   ] = await Promise.all([
     listClipCandidatesForSourceFile(supabase, file.id),
     getTranscriptForSourceFile(supabase, file.id),
     listExportedClipsForSourceFile(supabase, file.id),
+    getCaptionsForSourceFile(supabase, file.id),
+    user ? getOwnProfile(supabase, user.id) : Promise.resolve(null),
   ]);
 
   let signedVideoUrl: string | null = null;
@@ -79,83 +91,93 @@ export default async function ClipsPage({ params }: ClipsPageProps) {
 
   const approvedCount = clips.filter((clip) => clip.status === "approved").length;
   const exportedCount = exports.filter((item) => item.status === "ready").length;
+  const hasCaptions = Boolean(caption?.cues.length);
+  const brandName = brandLabelFromProfile(profile);
 
   return (
-    <div className="space-y-8">
-      <section className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-sm font-medium uppercase tracking-[0.14em] text-accent">
-            Clip review and export
-          </p>
-          <h1 className="mt-2 font-display text-4xl font-semibold tracking-tight">
-            {file.original_filename}
-          </h1>
-          <p className="mt-2 text-sm text-muted">
-            {SOURCE_FILE_TYPE_LABELS[file.file_type]} · Mock detection + FFmpeg export
-            {transcript ? " · grounded in transcript segments" : " · duration-based fallback"}
-            {approvedCount ? ` · ${approvedCount} approved` : ""}
-            {exportedCount ? ` · ${exportedCount} exported` : ""}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          <Link
-            href={`/projects/${projectId}/files/${fileId}`}
-            className="btn-secondary"
-          >
-            Back to file
-          </Link>
-          <Link
-            href={`/projects/${projectId}/files/${fileId}/transcript`}
-            className="btn-secondary"
-          >
-            Transcript
-          </Link>
-          <Link
-            href={`/projects/${projectId}/files/${fileId}/captions`}
-            className="btn-secondary"
-          >
-            Captions
-          </Link>
-          <DetectClipsButton
-            sourceFileId={file.id}
-            projectId={projectId}
-            redirectToReview={false}
-            label={
-              clips.length > 0
-                ? "Re-detect mock clips"
-                : "Detect mock clip candidates"
-            }
-          />
-          {approvedCount > 0 ? (
-            <ExportClipButton
-              mode="approved"
+    <ExportPresetProvider hasCaptions={hasCaptions} brandName={brandName}>
+      <div className="space-y-8">
+        <section className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-sm font-medium uppercase tracking-[0.14em] text-accent">
+              Clip review and reel export
+            </p>
+            <h1 className="mt-2 font-display text-4xl font-semibold tracking-tight">
+              {file.original_filename}
+            </h1>
+            <p className="mt-2 text-sm text-muted">
+              {SOURCE_FILE_TYPE_LABELS[file.file_type]} · Detect → approve → export
+              vertical shorts
+              {transcript ? " · grounded in transcript segments" : " · duration-based fallback"}
+              {approvedCount ? ` · ${approvedCount} approved` : ""}
+              {exportedCount ? ` · ${exportedCount} exported` : ""}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Link
+              href={`/projects/${projectId}/files/${fileId}`}
+              className="btn-secondary"
+            >
+              Back to file
+            </Link>
+            <Link
+              href={`/projects/${projectId}/files/${fileId}/transcript`}
+              className="btn-secondary"
+            >
+              Transcript
+            </Link>
+            <Link
+              href={`/projects/${projectId}/files/${fileId}/captions`}
+              className="btn-secondary"
+            >
+              Captions
+            </Link>
+            <DetectClipsButton
               sourceFileId={file.id}
-              label={`Export ${approvedCount} approved`}
+              projectId={projectId}
+              redirectToReview={false}
+              label={
+                clips.length > 0
+                  ? "Re-detect mock clips"
+                  : "Detect mock clip candidates"
+              }
             />
-          ) : null}
-        </div>
-      </section>
+            {approvedCount > 0 ? (
+              <ExportClipButton
+                mode="approved"
+                sourceFileId={file.id}
+                label={`Export ${approvedCount} approved reels`}
+              />
+            ) : null}
+          </div>
+        </section>
 
-      {!transcript ? (
-        <Alert tone="info">
-          No transcript yet. Detection still works from duration, but results are
-          stronger after you generate a mock transcript.
-        </Alert>
-      ) : null}
+        {!transcript ? (
+          <Alert tone="info">
+            No transcript yet. Detection still works from duration, but results are
+            stronger after you generate a mock transcript.
+          </Alert>
+        ) : null}
 
-      {clipsError ? <Alert tone="error">{clipsError}</Alert> : null}
-      {exportsError ? <Alert tone="error">{exportsError}</Alert> : null}
+        {clipsError ? <Alert tone="error">{clipsError}</Alert> : null}
+        {exportsError ? <Alert tone="error">{exportsError}</Alert> : null}
 
-      <ExportedClipsList exports={exports} />
+        <ExportPresetControls
+          projectId={projectId}
+          sourceFileId={file.id}
+        />
 
-      <ClipCandidatesReview
-        clips={clips}
-        projectId={projectId}
-        sourceFileId={file.id}
-        signedVideoUrl={signedVideoUrl}
-        durationSeconds={file.video_duration_seconds}
-        approvedCount={approvedCount}
-      />
-    </div>
+        <ExportedClipsList exports={exports} />
+
+        <ClipCandidatesReview
+          clips={clips}
+          projectId={projectId}
+          sourceFileId={file.id}
+          signedVideoUrl={signedVideoUrl}
+          durationSeconds={file.video_duration_seconds}
+          approvedCount={approvedCount}
+        />
+      </div>
+    </ExportPresetProvider>
   );
 }
