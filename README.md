@@ -113,14 +113,20 @@ pnpm health:api
 | `pnpm sql:bundle` | Build `database/dist/supabase_schema.sql` |
 | `pnpm health:api` | Smoke-check API `/health` |
 | `pnpm smoke:local` | CI + SQL bundle (+ API health if up) |
+| `pnpm setup:desktop` | One-time Electron binary download |
+| `pnpm dev:desktop` | Open Luminary in a native desktop window |
+
+Desktop shell details: [`apps/desktop/README.md`](apps/desktop/README.md).
+
+Public desktop mock (no Supabase): [`/demo/reel-export`](http://localhost:3000/demo/reel-export)
 
 ---
 
 ## Current milestone
 
-**Milestone 24 — Dedicated worker queue**
+**Milestone 26 — Vertical reel / short export**
 
-Optional FastAPI worker claims queued `document_extract` / `video_metadata` / `video_export` jobs when `DEDICATED_JOB_WORKER=true`. Default remains Next.js `after()` for local/dev without a worker process.
+Export approved clips as `9:16` / `1:1` social MP4s with burned captions and creator brand stamps. Optional FastAPI worker still claims heavy media jobs when `DEDICATED_JOB_WORKER=true`.
 
 - Release steps: [`docs/release-checklist.md`](docs/release-checklist.md)
 - Host setup: [`docs/deployment.md`](docs/deployment.md)

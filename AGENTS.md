@@ -57,7 +57,7 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 - **Milestone 22 — Next.js proxy migration**: replace deprecated `middleware.ts` with `proxy.ts` session guard.
 - **Milestone 23 — Clipboard copy exports**: copy course Markdown and content Markdown/text to the clipboard.
 - **Milestone 24 — Dedicated worker queue**: FastAPI worker claims heavy media jobs (`DEDICATED_JOB_WORKER`); mock/AI jobs still use `after()`.
-- **Milestone 26 — Vertical reel / short export**: `9:16`/`1:1` FFmpeg framing, burn-in captions, brand identity stamp, Settings display-name edit, migration `0015`.
+- **Milestone 26 — Vertical reel / short export**: `9:16`/`1:1` FFmpeg framing, burn-in captions, brand identity stamp, Settings display-name edit, migration `0015`, Electron desktop shell + `/demo/reel-export` desktop mock.
 
 ## Known issues
 

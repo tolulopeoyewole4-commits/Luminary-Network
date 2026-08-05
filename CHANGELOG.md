@@ -13,6 +13,7 @@ All notable changes to Luminary AI are documented here.
 - Clips-page reel preset controls; exports list shows applied presets.
 - API Docker image installs `fonts-dejavu-core` for brand-stamp drawtext.
 - Unit coverage for caption slicing, vertical export sizing, and preset helpers.
+- Electron desktop shell (`apps/desktop`, `pnpm dev:desktop`) and public desktop mock at `/demo/reel-export`.
 
 ## [0.24.0] — Milestone 24
 
