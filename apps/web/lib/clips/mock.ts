@@ -69,8 +69,12 @@ function buildFromSegments(input: {
       Math.min(duration, Math.max(endSeg.endTime, startTime + 12)).toFixed(3),
     );
 
+    // Prefer short-form windows that fit Reels / Shorts / TikTok.
     if (endTime - startTime > 45) {
       endTime = Number((startTime + 45).toFixed(3));
+    }
+    if (endTime - startTime < 12) {
+      endTime = Number(Math.min(duration, startTime + 15).toFixed(3));
     }
     if (endTime <= startTime) continue;
 
@@ -78,7 +82,7 @@ function buildFromSegments(input: {
     const rank = candidates.length + 1;
     candidates.push({
       title: clipTitle(sourceTitle, rank, excerpt),
-      reason: `Strong teaching beat around ${formatTimestamp(startTime)}: “${excerpt}${excerpt.length >= 90 ? "…" : ""}”`,
+      reason: `Short-form hook around ${formatTimestamp(startTime)} for Reels/Shorts: “${excerpt}${excerpt.length >= 90 ? "…" : ""}”`,
       startTime,
       endTime,
       score: Number((0.92 - candidates.length * 0.05).toFixed(4)),
@@ -97,7 +101,8 @@ function buildFromDuration(input: {
   maxCandidates: number;
 }): MockClipCandidate[] {
   const { duration, sourceTitle, maxCandidates } = input;
-  const clipLength = Math.min(30, Math.max(12, Math.floor(duration / 5)));
+  // ~15–30s windows map cleanly to vertical social exports.
+  const clipLength = Math.min(30, Math.max(15, Math.floor(duration / 6)));
   const gap = Math.max(
     clipLength,
     Math.floor(duration / Math.max(maxCandidates, 1)),
@@ -115,7 +120,7 @@ function buildFromDuration(input: {
     const rank = candidates.length + 1;
     candidates.push({
       title: clipTitle(sourceTitle, rank),
-      reason: `Evenly spaced highlight window (${formatTimestamp(startTime)}–${formatTimestamp(endTime)}) for short-form review.`,
+      reason: `Evenly spaced Reels/Shorts window (${formatTimestamp(startTime)}–${formatTimestamp(endTime)}) ready for vertical export.`,
       startTime,
       endTime,
       score: Number((0.8 - candidates.length * 0.04).toFixed(4)),

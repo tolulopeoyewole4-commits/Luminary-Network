@@ -36,6 +36,7 @@ pnpm sql:bundle
 23. `migrations/0012_ai_generation_jobs.sql`
 24. `migrations/0013_cancel_processing_jobs.sql`
 25. `migrations/0014_job_worker_claim.sql`
+26. `migrations/0015_reel_export_presets.sql`
 
 Print the same list locally:
 

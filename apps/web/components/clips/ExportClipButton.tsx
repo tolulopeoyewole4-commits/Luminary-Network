@@ -3,10 +3,15 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
+import { useExportPresetsOptional } from "@/components/clips/ExportPresetContext";
 import {
   exportApprovedClipsAction,
   exportClipCandidateAction,
 } from "@/lib/clips/export-actions";
+import {
+  DEFAULT_CLIP_EXPORT_PRESETS,
+  type ClipExportPresets,
+} from "@/lib/clips/export-presets";
 
 type ExportClipButtonProps =
   | {
@@ -14,23 +19,29 @@ type ExportClipButtonProps =
       clipCandidateId: string;
       label?: string;
       className?: string;
+      presets?: ClipExportPresets;
     }
   | {
       mode: "approved";
       sourceFileId: string;
       label?: string;
       className?: string;
+      presets?: ClipExportPresets;
     };
 
 export function ExportClipButton(props: ExportClipButtonProps) {
   const router = useRouter();
+  const context = useExportPresetsOptional();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
   const label =
     props.label ??
-    (props.mode === "approved" ? "Export approved clips" : "Export with FFmpeg");
+    (props.mode === "approved" ? "Export approved clips" : "Export reel");
+
+  const presets =
+    props.presets ?? context?.presets ?? DEFAULT_CLIP_EXPORT_PRESETS;
 
   return (
     <div className="space-y-2">
@@ -44,8 +55,12 @@ export function ExportClipButton(props: ExportClipButtonProps) {
           startTransition(async () => {
             const result =
               props.mode === "one"
-                ? await exportClipCandidateAction(props.clipCandidateId)
-                : await exportApprovedClipsAction(props.sourceFileId);
+                ? await exportClipCandidateAction(props.clipCandidateId, {
+                    presets,
+                  })
+                : await exportApprovedClipsAction(props.sourceFileId, {
+                    presets,
+                  });
             if (!result.ok) {
               setError(result.error);
               router.refresh();

@@ -1,0 +1,15 @@
+{
+  "name": "luminary-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Luminary AI desktop shell (Electron). Runs the web + API locally and opens the app in a native window.",
+  "main": "main.js",
+  "scripts": {
+    "dev": "electron .",
+    "dev:nosandbox": "electron . --no-sandbox",
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^33.2.1"
+  }
+}

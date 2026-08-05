@@ -5,6 +5,7 @@ from typing import Any
 from supabase import Client
 
 from app.services.documents.extract import DocumentExtractionError, extract_document
+from app.services.video.captions import build_webvtt, slice_caption_cues_for_clip
 from app.services.video.export import VideoExportError, export_video_clip
 from app.services.video.metadata import VideoMetadataError, extract_video_metadata
 from app.workers.jobs import (
@@ -131,6 +132,70 @@ def handle_video_metadata(client: Client, job: dict[str, Any]) -> None:
         raise WorkerJobError("This job was cancelled.")
 
 
+def _load_captions_vtt_for_export(
+    client: Client,
+    *,
+    source_file_id: str,
+    start_time: float,
+    end_time: float,
+) -> str:
+    caption_response = (
+        client.table("captions")
+        .select("id")
+        .eq("source_file_id", source_file_id)
+        .maybe_single()
+        .execute()
+    )
+    caption = caption_response.data
+    if not caption:
+        raise WorkerJobError(
+            "Burn-in captions requested, but this video has no captions yet. "
+            "Generate captions first, or turn off burn captions."
+        )
+
+    cues_response = (
+        client.table("caption_cues")
+        .select("start_time, end_time, text")
+        .eq("caption_id", caption["id"])
+        .order("start_time")
+        .execute()
+    )
+    cues = cues_response.data or []
+    sliced = slice_caption_cues_for_clip(
+        cues,
+        start_time=start_time,
+        end_time=end_time,
+    )
+    if not sliced:
+        raise WorkerJobError(
+            "Burn-in captions requested, but no caption cues overlap this clip window."
+        )
+    return build_webvtt(sliced)
+
+
+def _load_brand_text(client: Client, user_id: str) -> str:
+    profile_response = (
+        client.table("profiles")
+        .select("display_name, full_name, email")
+        .eq("id", user_id)
+        .maybe_single()
+        .execute()
+    )
+    profile = profile_response.data or {}
+    display = str(profile.get("display_name") or "").strip()
+    if display:
+        return display
+    full_name = str(profile.get("full_name") or "").strip()
+    if full_name:
+        return full_name
+    email = str(profile.get("email") or "").strip()
+    if email and "@" in email:
+        return email.split("@", 1)[0]
+    raise WorkerJobError(
+        "Brand stamp requested, but the creator profile has no display name."
+    )
+
+
 def handle_video_export(client: Client, job: dict[str, Any]) -> None:
     job_id = job["id"]
     source = _require_source_file(client, job.get("source_file_id"))
@@ -152,6 +217,22 @@ def handle_video_export(client: Client, job: dict[str, Any]) -> None:
 
     start_time = float(exported["start_time"])
     end_time = float(exported["end_time"])
+    aspect_ratio = str(exported.get("aspect_ratio") or "original")
+    burn_captions = bool(exported.get("burn_captions"))
+    brand_stamp = bool(exported.get("brand_stamp"))
+
+    captions_vtt: str | None = None
+    if burn_captions:
+        captions_vtt = _load_captions_vtt_for_export(
+            client,
+            source_file_id=source["id"],
+            start_time=start_time,
+            end_time=end_time,
+        )
+
+    brand_text: str | None = None
+    if brand_stamp:
+        brand_text = _load_brand_text(client, str(job["user_id"]))
 
     try:
         clip_bytes = export_video_clip(
@@ -159,6 +240,9 @@ def handle_video_export(client: Client, job: dict[str, Any]) -> None:
             start_time=start_time,
             end_time=end_time,
             filename=source["original_filename"],
+            aspect_ratio=aspect_ratio,
+            captions_vtt=captions_vtt,
+            brand_text=brand_text,
         )
     except VideoExportError as exc:
         raise WorkerJobError(exc.message) from exc

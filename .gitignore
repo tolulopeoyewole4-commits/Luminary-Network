@@ -51,3 +51,7 @@ tmp/
 /uploads/
 *.mp4
 !docs/**/*.mp4
+
+# Compact pilot-edit demo assets (regenerate with scripts/prepare-pilot-edits.sh)
+!apps/web/public/demo/pilot/
+!apps/web/public/demo/pilot/**

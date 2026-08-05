@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
+import { DisplayNameForm } from "@/components/settings/DisplayNameForm";
 import { Alert } from "@/components/ui/Alert";
 import { getOwnProfile } from "@/lib/profiles";
 import { createClient } from "@/lib/supabase/server";
@@ -32,7 +33,7 @@ export default async function SettingsPage() {
         </h1>
         <p className="mt-2 text-muted">
           Your profile is private and protected by Row-Level Security. Only you
-          can view this record.
+          can view this record. Display name stamps onto exported reels.
         </p>
       </section>
 
@@ -43,36 +44,46 @@ export default async function SettingsPage() {
           `database/migrations/0001_profiles.sql` has been applied in Supabase.
         </Alert>
       ) : (
-        <dl className="surface-card divide-y divide-[var(--border)]">
-          <div className="grid gap-1 px-5 py-4 sm:grid-cols-3 sm:gap-4">
-            <dt className="text-sm text-muted">Display name</dt>
-            <dd className="sm:col-span-2 text-sm font-medium">
-              {profile.display_name || "—"}
-            </dd>
-          </div>
-          <div className="grid gap-1 px-5 py-4 sm:grid-cols-3 sm:gap-4">
-            <dt className="text-sm text-muted">Full name</dt>
-            <dd className="sm:col-span-2 text-sm font-medium">
-              {profile.full_name || "—"}
-            </dd>
-          </div>
-          <div className="grid gap-1 px-5 py-4 sm:grid-cols-3 sm:gap-4">
-            <dt className="text-sm text-muted">Email</dt>
-            <dd className="sm:col-span-2 text-sm font-medium">{profile.email}</dd>
-          </div>
-          <div className="grid gap-1 px-5 py-4 sm:grid-cols-3 sm:gap-4">
-            <dt className="text-sm text-muted">Creator type</dt>
-            <dd className="sm:col-span-2 text-sm font-medium">
-              {profile.creator_type || "Not set"}
-            </dd>
-          </div>
-          <div className="grid gap-1 px-5 py-4 sm:grid-cols-3 sm:gap-4">
-            <dt className="text-sm text-muted">Preferred tone</dt>
-            <dd className="sm:col-span-2 text-sm font-medium">
-              {profile.preferred_tone || "Not set"}
-            </dd>
-          </div>
-        </dl>
+        <>
+          <section className="surface-card px-5 py-5">
+            <h2 className="font-display text-xl font-semibold">
+              Brand identity
+            </h2>
+            <p className="mt-1 text-sm text-muted">
+              Edit the name burned onto vertical short exports.
+            </p>
+            <div className="mt-4">
+              <DisplayNameForm
+                initialDisplayName={profile.display_name || ""}
+              />
+            </div>
+          </section>
+
+          <dl className="surface-card divide-y divide-[var(--border)]">
+            <div className="grid gap-1 px-5 py-4 sm:grid-cols-3 sm:gap-4">
+              <dt className="text-sm text-muted">Full name</dt>
+              <dd className="sm:col-span-2 text-sm font-medium">
+                {profile.full_name || "—"}
+              </dd>
+            </div>
+            <div className="grid gap-1 px-5 py-4 sm:grid-cols-3 sm:gap-4">
+              <dt className="text-sm text-muted">Email</dt>
+              <dd className="sm:col-span-2 text-sm font-medium">{profile.email}</dd>
+            </div>
+            <div className="grid gap-1 px-5 py-4 sm:grid-cols-3 sm:gap-4">
+              <dt className="text-sm text-muted">Creator type</dt>
+              <dd className="sm:col-span-2 text-sm font-medium">
+                {profile.creator_type || "Not set"}
+              </dd>
+            </div>
+            <div className="grid gap-1 px-5 py-4 sm:grid-cols-3 sm:gap-4">
+              <dt className="text-sm text-muted">Preferred tone</dt>
+              <dd className="sm:col-span-2 text-sm font-medium">
+                {profile.preferred_tone || "Not set"}
+              </dd>
+            </div>
+          </dl>
+        </>
       )}
     </div>
   );

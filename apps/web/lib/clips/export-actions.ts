@@ -6,6 +6,8 @@ import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { buildWebVtt } from "@/lib/captions/format";
+import { getCaptionsForSourceFile } from "@/lib/captions/queries";
 import {
   bumpProcessingJobProgressIfActive,
   completeProcessingJobIfActive,
@@ -17,6 +19,14 @@ import {
   isAsyncClipExportEnabled,
   isDedicatedJobWorkerEnabled,
 } from "@/lib/jobs/flags";
+import {
+  brandLabelFromProfile,
+  describeExportPresets,
+  parseClipExportPresets,
+  sliceCaptionsForClip,
+  type ClipExportPresets,
+} from "@/lib/clips/export-presets";
+import { getOwnProfile } from "@/lib/profiles";
 import { createClient } from "@/lib/supabase/server";
 import {
   SIGNED_URL_EXPIRY_SECONDS,
@@ -77,13 +87,76 @@ type EnqueuedExport = {
   durationSeconds: number;
   originalFilename: string;
   sourceStoragePath: string;
+  presets: ClipExportPresets;
+  userId: string;
 };
+
+async function resolveExportOverlays(
+  work: Pick<
+    EnqueuedExport,
+    "sourceFileId" | "startTime" | "endTime" | "presets" | "userId"
+  >,
+): Promise<
+  | { ok: true; captionsVtt: string | null; brandText: string | null }
+  | { ok: false; error: string }
+> {
+  const supabase = await createClient();
+  let captionsVtt: string | null = null;
+  let brandText: string | null = null;
+
+  if (work.presets.burnCaptions) {
+    const { caption, error } = await getCaptionsForSourceFile(
+      supabase,
+      work.sourceFileId,
+    );
+    if (error) return { ok: false, error };
+    if (!caption?.cues.length) {
+      return {
+        ok: false,
+        error:
+          "Burn-in captions requested, but this video has no captions yet. Generate captions first, or turn off burn captions.",
+      };
+    }
+    const sliced = sliceCaptionsForClip(
+      caption.cues.map((cue) => ({
+        startTime: Number(cue.start_time),
+        endTime: Number(cue.end_time),
+        text: cue.text,
+      })),
+      work.startTime,
+      work.endTime,
+    );
+    if (sliced.length === 0) {
+      return {
+        ok: false,
+        error:
+          "Burn-in captions requested, but no caption cues overlap this clip window.",
+      };
+    }
+    captionsVtt = buildWebVtt(sliced);
+  }
+
+  if (work.presets.brandStamp) {
+    const profile = await getOwnProfile(supabase, work.userId);
+    brandText = brandLabelFromProfile(profile);
+    if (!brandText) {
+      return {
+        ok: false,
+        error:
+          "Brand stamp requested, but your profile has no display name. Set one in Settings.",
+      };
+    }
+  }
+
+  return { ok: true, captionsVtt, brandText };
+}
 
 async function enqueueClipExport(
   clipCandidateId: string,
-  options?: { existingJobId?: string },
+  options?: { existingJobId?: string; presets?: Partial<ClipExportPresets> },
 ): Promise<{ ok: true; work: EnqueuedExport } | { ok: false; error: string }> {
   const { supabase, user } = await requireUser();
+  const presets = parseClipExportPresets(options?.presets);
 
   const { data: clip, error: clipError } = await supabase
     .from("clip_candidates")
@@ -111,6 +184,16 @@ async function enqueueClipExport(
   if (file.processing_status === "uploading") {
     return { ok: false, error: "Finish uploading the source video before export." };
   }
+
+  // Validate overlays early so queued worker/after jobs fail fast in the UI.
+  const preview = await resolveExportOverlays({
+    sourceFileId: file.id,
+    startTime: Number(clip.start_time),
+    endTime: Number(clip.end_time),
+    presets,
+    userId: user.id,
+  });
+  if (!preview.ok) return preview;
 
   let jobId = options?.existingJobId;
 
@@ -169,19 +252,24 @@ async function enqueueClipExport(
   let exportedClipId = existingExport?.id;
   const previousStoragePath = existingExport?.internal_storage_path ?? null;
 
+  const exportFields = {
+    title: clip.title,
+    start_time: startTime,
+    end_time: endTime,
+    duration_seconds: durationSeconds,
+    status: "processing" as const,
+    error_message: null,
+    processing_job_id: jobId,
+    internal_storage_path: storagePath,
+    aspect_ratio: presets.aspectRatio,
+    burn_captions: presets.burnCaptions,
+    brand_stamp: presets.brandStamp,
+  };
+
   if (exportedClipId) {
     await supabase
       .from("exported_clips")
-      .update({
-        title: clip.title,
-        start_time: startTime,
-        end_time: endTime,
-        duration_seconds: durationSeconds,
-        status: "processing",
-        error_message: null,
-        processing_job_id: jobId,
-        internal_storage_path: storagePath,
-      })
+      .update(exportFields)
       .eq("id", exportedClipId);
   } else {
     const { data: created, error: createError } = await supabase
@@ -191,14 +279,8 @@ async function enqueueClipExport(
         project_id: clip.project_id,
         source_file_id: file.id,
         clip_candidate_id: clip.id,
-        processing_job_id: jobId,
-        title: clip.title,
-        start_time: startTime,
-        end_time: endTime,
-        duration_seconds: durationSeconds,
         mime_type: "video/mp4",
-        internal_storage_path: storagePath,
-        status: "processing",
+        ...exportFields,
       })
       .select("id")
       .single();
@@ -236,6 +318,8 @@ async function enqueueClipExport(
       durationSeconds,
       originalFilename: file.original_filename,
       sourceStoragePath: file.internal_storage_path,
+      presets,
+      userId: user.id,
     },
   };
 }
@@ -256,6 +340,7 @@ async function executeClipExport(work: EnqueuedExport): Promise<ExportClipResult
     projectId,
     sourceFileId,
     clipCandidateId,
+    presets,
   } = work;
 
   const started = await markProcessingJobRunningIfActive(supabase, jobId, 10);
@@ -264,6 +349,11 @@ async function executeClipExport(work: EnqueuedExport): Promise<ExportClipResult
   }
 
   try {
+    const overlays = await resolveExportOverlays(work);
+    if (!overlays.ok) {
+      throw new Error(overlays.error);
+    }
+
     const { data: blob, error: downloadError } = await supabase.storage
       .from(SOURCE_STORAGE_BUCKET)
       .download(sourceStoragePath);
@@ -281,6 +371,13 @@ async function executeClipExport(work: EnqueuedExport): Promise<ExportClipResult
     form.append("start_time", String(startTime));
     form.append("end_time", String(endTime));
     form.append("original_filename", originalFilename);
+    form.append("aspect_ratio", presets.aspectRatio);
+    if (overlays.captionsVtt) {
+      form.append("captions_vtt", overlays.captionsVtt);
+    }
+    if (overlays.brandText) {
+      form.append("brand_text", overlays.brandText);
+    }
 
     const response = await fetch(`${getApiBaseUrl()}/api/v1/videos/export-clip`, {
       method: "POST",
@@ -336,6 +433,9 @@ async function executeClipExport(work: EnqueuedExport): Promise<ExportClipResult
         internal_storage_path: storagePath,
         error_message: null,
         processing_job_id: jobId,
+        aspect_ratio: presets.aspectRatio,
+        burn_captions: presets.burnCaptions,
+        brand_stamp: presets.brandStamp,
       })
       .eq("id", exportedClipId);
 
@@ -371,7 +471,7 @@ async function executeClipExport(work: EnqueuedExport): Promise<ExportClipResult
       jobId,
       exportedClipId,
       signedUrl: signed?.signedUrl,
-      message: `Exported “${title}” (${durationSeconds.toFixed(1)}s).`,
+      message: `Exported “${title}” (${durationSeconds.toFixed(1)}s · ${describeExportPresets(presets)}).`,
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Clip export failed.";
@@ -394,7 +494,7 @@ async function executeClipExport(work: EnqueuedExport): Promise<ExportClipResult
 
 export async function exportClipCandidateAction(
   clipCandidateId: string,
-  options?: { existingJobId?: string },
+  options?: { existingJobId?: string; presets?: Partial<ClipExportPresets> },
 ): Promise<ExportClipResult> {
   const queued = await enqueueClipExport(clipCandidateId, options);
   if (!queued.ok) return queued;
@@ -406,7 +506,7 @@ export async function exportClipCandidateAction(
       jobId: queued.work.jobId,
       exportedClipId: queued.work.exportedClipId,
       message:
-        "Clip export queued for the dedicated worker. Watch progress on the jobs list; download when the export shows ready.",
+        "Reel export queued for the dedicated worker. Watch progress on the jobs list; download when the export shows ready.",
     };
   }
 
@@ -420,7 +520,7 @@ export async function exportClipCandidateAction(
       jobId: queued.work.jobId,
       exportedClipId: queued.work.exportedClipId,
       message:
-        "Clip export queued. Watch progress on the jobs list; download when the export shows ready.",
+        "Reel export queued. Watch progress on the jobs list; download when the export shows ready.",
     };
   }
 
@@ -429,8 +529,10 @@ export async function exportClipCandidateAction(
 
 export async function exportApprovedClipsAction(
   sourceFileId: string,
+  options?: { presets?: Partial<ClipExportPresets> },
 ): Promise<ExportClipResult> {
   const { supabase } = await requireUser();
+  const presets = parseClipExportPresets(options?.presets);
   const { data: clips, error } = await supabase
     .from("clip_candidates")
     .select("id, title")
@@ -446,12 +548,12 @@ export async function exportApprovedClipsAction(
     return { ok: false, error: "No approved clips to export." };
   }
 
-  if (isAsyncClipExportEnabled()) {
+  if (isAsyncClipExportEnabled() || isDedicatedJobWorkerEnabled()) {
     let queued = 0;
     const failures: string[] = [];
 
     for (const clip of clips) {
-      const result = await exportClipCandidateAction(clip.id);
+      const result = await exportClipCandidateAction(clip.id, { presets });
       if (result.ok) {
         queued += 1;
       } else {
@@ -471,7 +573,7 @@ export async function exportApprovedClipsAction(
       queued: true,
       message:
         failures.length === 0
-          ? `Queued ${queued} approved clip export${queued === 1 ? "" : "s"}.`
+          ? `Queued ${queued} approved reel export${queued === 1 ? "" : "s"} (${describeExportPresets(presets)}).`
           : `Queued ${queued} export(s); ${failures.length} failed to queue.`,
     };
   }
@@ -480,7 +582,7 @@ export async function exportApprovedClipsAction(
   const failures: string[] = [];
 
   for (const clip of clips) {
-    const result = await exportClipCandidateAction(clip.id);
+    const result = await exportClipCandidateAction(clip.id, { presets });
     if (result.ok) {
       success += 1;
     } else {
@@ -499,7 +601,7 @@ export async function exportApprovedClipsAction(
     ok: true,
     message:
       failures.length === 0
-        ? `Exported ${success} approved clip${success === 1 ? "" : "s"}.`
+        ? `Exported ${success} approved clip${success === 1 ? "" : "s"} (${describeExportPresets(presets)}).`
         : `Exported ${success} clip(s); ${failures.length} failed.`,
   };
 }

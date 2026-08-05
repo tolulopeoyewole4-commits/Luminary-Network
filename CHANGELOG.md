@@ -2,6 +2,20 @@
 
 All notable changes to Luminary AI are documented here.
 
+## [0.26.0] — Milestone 26
+
+### Added
+
+- Vertical reel/short export presets: `original` | `9:16` | `1:1` framing via FFmpeg scale+crop.
+- Burn-in captions on exported clips from overlapping `caption_cues` (WebVTT → FFmpeg subtitles).
+- Creator brand identity stamp from profile display name (editable in Settings).
+- Migration `0015_reel_export_presets.sql` (`aspect_ratio`, `burn_captions`, `brand_stamp` on `exported_clips`).
+- Clips-page reel preset controls; exports list shows applied presets.
+- API Docker image installs `fonts-dejavu-core` for brand-stamp drawtext.
+- Unit coverage for caption slicing, vertical export sizing, and preset helpers.
+- Electron desktop shell (`apps/desktop`, `pnpm dev:desktop`) and public desktop mock at `/demo/reel-export`.
+- Pilot edits demo at `/demo/pilot-edits` using the two shared Drive sources (vertical 9:16 exports with captions + brand); regenerate via `pnpm pilot:prepare`.
+
 ## [0.24.0] — Milestone 24
 
 ### Added

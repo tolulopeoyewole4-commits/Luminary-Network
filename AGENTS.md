@@ -28,7 +28,7 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 
 ## Current milestone
 
-**Milestone 24 — Dedicated worker queue** (complete)
+**Milestone 26 — Vertical reel / short export** (complete)
 
 ## Completed milestones
 
@@ -57,6 +57,7 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 - **Milestone 22 — Next.js proxy migration**: replace deprecated `middleware.ts` with `proxy.ts` session guard.
 - **Milestone 23 — Clipboard copy exports**: copy course Markdown and content Markdown/text to the clipboard.
 - **Milestone 24 — Dedicated worker queue**: FastAPI worker claims heavy media jobs (`DEDICATED_JOB_WORKER`); mock/AI jobs still use `after()`.
+- **Milestone 26 — Vertical reel / short export**: `9:16`/`1:1` FFmpeg framing, burn-in captions, brand identity stamp, Settings display-name edit, migration `0015`, Electron desktop shell + `/demo/reel-export` desktop mock.
 
 ## Known issues
 
@@ -65,9 +66,10 @@ Primary tagline: **Upload knowledge once. Publish everywhere. Teach forever.**
 - Paid AI providers remain disabled until `AI_PROVIDER` is explicitly extended beyond `mock`.
 - Transcripts are mocked (no speech-to-text provider); replace `buildMockTranscriptSegments` when a real STT API is approved.
 - Clip detection is mocked (no scene/ASR ranking model); replace `buildMockClipCandidates` when a real detector is approved.
-- Apply migrations through `0014_job_worker_claim.sql` (or rebundle) on existing Supabase projects.
+- Apply migrations through `0015_reel_export_presets.sql` (or rebundle) on existing Supabase projects.
+- Full NLE timeline editing, face-aware reframe, and real virality ranking are out of scope for Milestone 26.
 
 ## Next tasks
 
-- Operator cutover using `docs/release-checklist.md` (merge PRs #1→#24, apply SQL bundle including `0014`, deploy API + web).
-- Optional: move mock/AI jobs onto the worker; paid AI providers; real STT/caption providers.
+- Operator cutover using `docs/release-checklist.md` (merge train, apply SQL bundle including `0015`, deploy API + web).
+- Optional: move mock/AI jobs onto the worker; paid AI providers; real STT/caption providers; smarter clip ranking.

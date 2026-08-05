@@ -100,7 +100,7 @@ pnpm worker
 docker compose --profile worker up --build worker
 ```
 
-Apply SQL through `0014_job_worker_claim.sql` (or rebundle) before enabling worker mode. `/health` reports `worker_configured` when Supabase service credentials are present.
+Apply SQL through `0015_reel_export_presets.sql` (or rebundle) before enabling worker mode / reel exports. `/health` reports `worker_configured` when Supabase service credentials are present. The API Docker image includes FFmpeg and `fonts-dejavu-core` for brand-stamp drawtext.
 
 ### Fly.io (example)
 
